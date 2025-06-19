@@ -15,7 +15,7 @@ def main():
     parser.add_argument('--yolo-model', help='Path to YOLO model', 
                        default='yolo11n.pt')
     parser.add_argument('--classifier-model', help='Path to vehicle classifier', 
-                       default='improved_vehicle_classifier.pth')
+                       default='veri_type_classifier_efficientnetv2s_20250618_103353.pth')
     parser.add_argument('--conf-threshold', type=float, default=0.5,
                        help='Detection confidence threshold')
     parser.add_argument('--device', default='auto', choices=['auto', 'cpu', 'cuda'],
@@ -24,6 +24,10 @@ def main():
                        help='Display video while processing')
     parser.add_argument('--no-save-results', action='store_true',
                        help='Don\'t save detailed results to JSON')
+    parser.add_argument('--simple-tracker', action='store_true',
+                       help='Use simple centroid tracker instead of DeepSORT')
+    parser.add_argument('--batch-size', type=int, default=8,
+                       help='Batch size for processing frames (default: 8)')
     
     args = parser.parse_args()
     
@@ -32,7 +36,9 @@ def main():
         processor = VideoProcessor(
             yolo_model_path=args.yolo_model if os.path.exists(args.yolo_model) else None,
             classifier_model_path=args.classifier_model,
-            device=args.device
+            device=args.device,
+            use_deepsort=not args.simple_tracker,
+            batch_size=args.batch_size
         )
         
         # Set confidence threshold

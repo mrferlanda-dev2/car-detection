@@ -14,14 +14,20 @@ class YOLODetector:
     def __init__(self, model_path: Optional[str] = None, device: str = 'auto'):
         self.device = torch.device('cuda' if torch.cuda.is_available() and device == 'auto' else device)
         self.model = None
+        self.is_custom_single_class = False
         self.load_model(model_path)
         
-        # Vehicle classes in COCO dataset
+        # Vehicle classes in COCO dataset (for default models)
         self.vehicle_classes = {
             2: 'car',
             # 3: 'motorcycle', 
             5: 'bus',
             7: 'truck'
+        }
+        
+        # Single class mapping for custom trained models
+        self.single_class_mapping = {
+            0: 'car'  # Your trained model has only 1 class (index 0) = car
         }
         
     def load_model(self, model_path: Optional[str] = None):
@@ -33,6 +39,20 @@ class YOLODetector:
                     import ultralytics
                     self.model = ultralytics.YOLO(model_path)
                     print(f"✅ Custom YOLO model loaded from {model_path}")
+                    
+                    # Check if this is a single-class custom model
+                    try:
+                        if hasattr(self.model, 'names') and len(self.model.names) == 1:
+                            self.is_custom_single_class = True
+                            print(f"   Detected single-class model (1 class)")
+                        elif hasattr(self.model, 'model') and hasattr(self.model.model, 'nc') and self.model.model.nc == 1:
+                            self.is_custom_single_class = True
+                            print(f"   Detected single-class model (1 class)")
+                    except Exception:
+                        # Assume custom model if detection fails
+                        self.is_custom_single_class = True
+                        print(f"   Assuming single-class custom model")
+                    
                     return
                 except Exception as e:
                     print(f"⚠️  Failed to load custom YOLO: {e}")
@@ -78,7 +98,19 @@ class YOLODetector:
                         for box in boxes:
                             class_id = int(box.cls)
                             confidence = float(box.conf)
-                            if class_id in self.vehicle_classes and confidence >= conf_threshold:
+                            
+                            # Handle single-class custom model
+                            if self.is_custom_single_class:
+                                if confidence >= conf_threshold:
+                                    x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
+                                    detections.append({
+                                        'bbox': [int(x1), int(y1), int(x2), int(y2)],
+                                        'confidence': confidence,
+                                        'class': self.single_class_mapping.get(class_id, 'car'),
+                                        'class_id': class_id
+                                    })
+                            # Handle multi-class COCO model
+                            elif class_id in self.vehicle_classes and confidence >= conf_threshold:
                                 x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
                                 detections.append({
                                     'bbox': [int(x1), int(y1), int(x2), int(y2)],

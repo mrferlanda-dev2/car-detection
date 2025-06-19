@@ -40,15 +40,15 @@ class VehicleClassifier:
             # Create model architecture (same as training)
             self.model = torchvision.models.efficientnet_v2_s(weights=None)
             
-            # Recreate classifier
+            # Recreate classifier (match VeRi training architecture)
             num_ftrs = 1280  # EfficientNet-V2-S features
             self.model.classifier = nn.Sequential(
-                nn.Dropout(p=0.4),
-                nn.Linear(num_ftrs, 512),
-                nn.BatchNorm1d(512),
-                nn.ReLU(inplace=True),
                 nn.Dropout(p=0.3),
-                nn.Linear(512, num_classes)
+                nn.Linear(num_ftrs, 256),
+                nn.BatchNorm1d(256),
+                nn.ReLU(inplace=True),
+                nn.Dropout(p=0.2),
+                nn.Linear(256, num_classes)
             )
             
             # Load weights
