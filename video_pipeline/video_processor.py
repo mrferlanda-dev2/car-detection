@@ -19,7 +19,7 @@ class VideoProcessor:
     """Main video processing pipeline"""
     
     def __init__(self, yolo_model_path: Optional[str] = None, 
-                 classifier_model_path: str = "fixed_efficientnet_v2_s_vehicle_classifier.pth",
+                 classifier_model_path: Optional[str] = None,
                  device: str = 'auto', use_deepsort: bool = True, batch_size: int = 8):
         
         print("🚀 Initializing Vehicle Detection Pipeline...")
@@ -37,9 +37,20 @@ class VideoProcessor:
             print(f"🔥 GPU detected: {torch.cuda.get_device_name()}")
             print(f"   VRAM: {torch.cuda.get_device_properties(0).total_memory / 1e9:.1f}GB")
         
-        # Initialize models
-        self.detector = YOLODetector(yolo_model_path, device)
-        self.classifier = VehicleClassifier(classifier_model_path, device)
+        # Initialize detector (required)
+        self.detector = YOLODetector(yolo_model_path, str(self.device))
+        
+        # Initialize classifier (optional)
+        self.classifier = None
+        if classifier_model_path:
+            try:
+                self.classifier = VehicleClassifier(classifier_model_path, str(self.device))
+                print("✅ Vehicle classifier loaded")
+            except Exception as e:
+                print(f"⚠️  Failed to load classifier: {e}")
+                print("   Continuing in detection-only mode")
+        else:
+            print("🔍 Running in detection-only mode")
         
         # Processing parameters
         self.conf_threshold = 0.5
@@ -60,11 +71,12 @@ class VideoProcessor:
             from simple_tracker import SimpleCentroidTracker
             self.tracker = SimpleCentroidTracker(max_distance=50)
         
-        # Classification smoothing
-        self.class_history = defaultdict(lambda: deque(maxlen=5))  # 5-frame window
-        self.displayed_class = {}  # vehicle_id: current displayed class
-        self.class_counter = {}    # vehicle_id: (last predicted class, count)
-        self.consecutive_threshold = 3  # Reduced for DeepSORT (tracks are more stable)
+        # Classification smoothing (only if classifier is available)
+        if self.classifier:
+            self.class_history = defaultdict(lambda: deque(maxlen=5))  # 5-frame window
+            self.displayed_class = {}  # vehicle_id: current displayed class
+            self.class_counter = {}    # vehicle_id: (last predicted class, count)
+            self.consecutive_threshold = 3  # Reduced for DeepSORT (tracks are more stable)
         
         print("✅ Pipeline initialized successfully!")
     
@@ -104,54 +116,72 @@ class VideoProcessor:
             width = x2 - x1
             height = y2 - y1
 
-            if width >= self.min_detection_size and height >= self.min_detection_size:
+            # Base result with detection info
+            result = {
+                'bbox': [int(x1), int(y1), int(x2), int(y2)],
+                'detection_confidence': tracked_obj['confidence'],
+                'detection_class': tracked_obj['class'],
+                'track_id': track_id,
+                'width': width,
+                'height': height
+            }
+
+            # Add classification if classifier is available and object is large enough
+            if (self.classifier and 
+                width >= self.min_detection_size and height >= self.min_detection_size):
+                
                 # Ensure valid crop bounds
                 y1, y2 = max(0, y1), min(frame.shape[0], y2)
                 x1, x2 = max(0, x1), min(frame.shape[1], x2)
                 
                 vehicle_crop = frame[y1:y2, x1:x2]
                 
-                # Skip if crop is empty or too small
-                if vehicle_crop.size == 0 or vehicle_crop.shape[0] < 10 or vehicle_crop.shape[1] < 10:
-                    continue
+                # Skip classification if crop is empty or too small
+                if vehicle_crop.size > 0 and vehicle_crop.shape[0] >= 10 and vehicle_crop.shape[1] >= 10:
+                    vehicle_class, class_confidence = self.classifier.classify(vehicle_crop)
+
+                    # Consecutive prediction logic for classification smoothing
+                    last_class, count = self.class_counter.get(track_id, (vehicle_class, 0))
+                    if vehicle_class == last_class:
+                        count += 1
+                    else:
+                        count = 1  # reset counter if class changes
+                    self.class_counter[track_id] = (vehicle_class, count)
+
+                    # Only update displayed class if threshold is reached
+                    if track_id not in self.displayed_class or (vehicle_class != self.displayed_class[track_id] and count >= self.consecutive_threshold):
+                        self.displayed_class[track_id] = vehicle_class
+
+                    smoothed_class = self.displayed_class[track_id]
                     
-                vehicle_class, class_confidence = self.classifier.classify(vehicle_crop)
-
-                # Consecutive prediction logic for classification smoothing
-                last_class, count = self.class_counter.get(track_id, (vehicle_class, 0))
-                if vehicle_class == last_class:
-                    count += 1
-                else:
-                    count = 1  # reset counter if class changes
-                self.class_counter[track_id] = (vehicle_class, count)
-
-                # Only update displayed class if threshold is reached
-                if track_id not in self.displayed_class or (vehicle_class != self.displayed_class[track_id] and count >= self.consecutive_threshold):
-                    self.displayed_class[track_id] = vehicle_class
-
-                smoothed_class = self.displayed_class[track_id]
-
-                result = {
-                    'bbox': [int(x1), int(y1), int(x2), int(y2)],
-                    'detection_confidence': tracked_obj['confidence'],
-                    'detection_class': tracked_obj['class'],
-                    'vehicle_class': smoothed_class,
-                    'class_confidence': class_confidence,
-                    'track_id': track_id,  # Changed from vehicle_id to track_id
-                    'width': width,
-                    'height': height
-                }
-                
-                # Add DeepSORT-specific info if available
-                if self.use_deepsort and 'age' in tracked_obj:
+                    # Add classification results
                     result.update({
-                        'track_age': tracked_obj['age'],
-                        'track_hits': tracked_obj['hits'],
-                        'time_since_update': tracked_obj['time_since_update']
+                        'vehicle_class': smoothed_class,
+                        'class_confidence': class_confidence
                     })
-                
-                results.append(result)
-                annotated_frame = self.annotate_detection(annotated_frame, result)
+                else:
+                    # Add default classification for small/invalid crops
+                    result.update({
+                        'vehicle_class': 'Unknown',
+                        'class_confidence': 0.0
+                    })
+            else:
+                # No classification available - use detection class or default
+                result.update({
+                    'vehicle_class': tracked_obj.get('class', 'Vehicle'),
+                    'class_confidence': 0.0
+                })
+            
+            # Add DeepSORT-specific info if available
+            if self.use_deepsort and 'age' in tracked_obj:
+                result.update({
+                    'track_age': tracked_obj['age'],
+                    'track_hits': tracked_obj['hits'],
+                    'time_since_update': tracked_obj['time_since_update']
+                })
+            
+            results.append(result)
+            annotated_frame = self.annotate_detection(annotated_frame, result)
         
         # Add tracking trails if using DeepSORT
         if self.use_deepsort and hasattr(self.tracker, 'draw_tracks'):
@@ -174,9 +204,15 @@ class VideoProcessor:
         # Draw bounding box
         cv2.rectangle(frame, (x1, y1), (x2, y2), bbox_color, 2)
         
-        # Only show track ID and vehicle class (hide detection details)
+        # Show track ID and vehicle class/type
         vehicle_class = result['vehicle_class']
-        track_text = f"ID:{track_id} | {vehicle_class}"
+        class_confidence = result.get('class_confidence', 0.0)
+        
+        # Format display text based on whether we have classification
+        if self.classifier and class_confidence > 0:
+            track_text = f"ID:{track_id} | {vehicle_class} ({class_confidence:.2f})"
+        else:
+            track_text = f"ID:{track_id} | {vehicle_class}"
         
         # Calculate text size
         font = cv2.FONT_HERSHEY_SIMPLEX
@@ -241,58 +277,85 @@ class VideoProcessor:
             frame_results = []
             annotated_frame = frame.copy()
             
-            # Collect all valid vehicle crops for batch classification
-            valid_objects = []
-            vehicle_crops = []
-            
-            for tracked_obj in tracked_objects:
-                track_id = tracked_obj['track_id']
-                x1, y1, x2, y2 = tracked_obj['bbox']
-                width = x2 - x1
-                height = y2 - y1
-
-                if width >= self.min_detection_size and height >= self.min_detection_size:
-                    # Ensure valid crop bounds
-                    y1, y2 = max(0, y1), min(frame.shape[0], y2)
-                    x1, x2 = max(0, x1), min(frame.shape[1], x2)
-                    
-                    vehicle_crop = frame[y1:y2, x1:x2]
-                    
-                    # Skip if crop is empty or too small
-                    if vehicle_crop.size == 0 or vehicle_crop.shape[0] < 10 or vehicle_crop.shape[1] < 10:
-                        continue
-                    
-                    valid_objects.append(tracked_obj)
-                    vehicle_crops.append(vehicle_crop)
-            
-            # Batch classify all crops at once
-            if vehicle_crops:
-                batch_classes, batch_confidences = self.classifier.classify_batch(vehicle_crops)
+            # Process all tracked objects
+            if self.classifier:
+                # Collect all valid vehicle crops for batch classification
+                valid_objects = []
+                vehicle_crops = []
                 
-                for tracked_obj, vehicle_class, class_confidence in zip(valid_objects, batch_classes, batch_confidences):
+                for tracked_obj in tracked_objects:
+                    track_id = tracked_obj['track_id']
+                    x1, y1, x2, y2 = tracked_obj['bbox']
+                    width = x2 - x1
+                    height = y2 - y1
+
+                    if width >= self.min_detection_size and height >= self.min_detection_size:
+                        # Ensure valid crop bounds
+                        y1, y2 = max(0, y1), min(frame.shape[0], y2)
+                        x1, x2 = max(0, x1), min(frame.shape[1], x2)
+                        
+                        vehicle_crop = frame[y1:y2, x1:x2]
+                        
+                        # Skip if crop is empty or too small
+                        if vehicle_crop.size > 0 and vehicle_crop.shape[0] >= 10 and vehicle_crop.shape[1] >= 10:
+                            valid_objects.append(tracked_obj)
+                            vehicle_crops.append(vehicle_crop)
+                
+                # Batch classify all crops at once
+                if vehicle_crops:
+                    batch_classes, batch_confidences = self.classifier.classify_batch(vehicle_crops)
+                    
+                    for tracked_obj, vehicle_class, class_confidence in zip(valid_objects, batch_classes, batch_confidences):
+                        track_id = tracked_obj['track_id']
+                        x1, y1, x2, y2 = tracked_obj['bbox']
+                        
+                        # Consecutive prediction logic for classification smoothing
+                        last_class, count = self.class_counter.get(track_id, (vehicle_class, 0))
+                        if vehicle_class == last_class:
+                            count += 1
+                        else:
+                            count = 1
+                        self.class_counter[track_id] = (vehicle_class, count)
+
+                        # Only update displayed class if threshold is reached
+                        if track_id not in self.displayed_class or (vehicle_class != self.displayed_class[track_id] and count >= self.consecutive_threshold):
+                            self.displayed_class[track_id] = vehicle_class
+
+                        smoothed_class = self.displayed_class[track_id]
+
+                        result = {
+                            'bbox': [int(x1), int(y1), int(x2), int(y2)],
+                            'detection_confidence': tracked_obj['confidence'],
+                            'detection_class': tracked_obj['class'],
+                            'vehicle_class': smoothed_class,
+                            'class_confidence': class_confidence,
+                            'track_id': track_id,
+                            'width': x2 - x1,
+                            'height': y2 - y1
+                        }
+                        
+                        # Add DeepSORT-specific info if available
+                        if self.use_deepsort and 'age' in tracked_obj:
+                            result.update({
+                                'track_age': tracked_obj['age'],
+                                'track_hits': tracked_obj['hits'],
+                                'time_since_update': tracked_obj['time_since_update']
+                            })
+                        
+                        frame_results.append(result)
+                        annotated_frame = self.annotate_detection(annotated_frame, result)
+            else:
+                # No classifier - just process detections
+                for tracked_obj in tracked_objects:
                     track_id = tracked_obj['track_id']
                     x1, y1, x2, y2 = tracked_obj['bbox']
                     
-                    # Consecutive prediction logic for classification smoothing
-                    last_class, count = self.class_counter.get(track_id, (vehicle_class, 0))
-                    if vehicle_class == last_class:
-                        count += 1
-                    else:
-                        count = 1
-                    self.class_counter[track_id] = (vehicle_class, count)
-
-                    # Only update displayed class if threshold is reached
-                    if track_id not in self.displayed_class or (vehicle_class != self.displayed_class[track_id] and count >= self.consecutive_threshold):
-                        self.displayed_class[track_id] = vehicle_class
-
-                    smoothed_class = self.displayed_class[track_id]
-
                     result = {
                         'bbox': [int(x1), int(y1), int(x2), int(y2)],
                         'detection_confidence': tracked_obj['confidence'],
                         'detection_class': tracked_obj['class'],
-                        'vehicle_class': smoothed_class,
-                        'class_confidence': class_confidence,
+                        'vehicle_class': tracked_obj.get('class', 'Vehicle'),
+                        'class_confidence': 0.0,
                         'track_id': track_id,
                         'width': x2 - x1,
                         'height': y2 - y1
@@ -379,7 +442,7 @@ class VideoProcessor:
                             
                             # Count vehicle types
                             for result in frame_results:
-                                vehicle_type = result['vehicle_class']
+                                vehicle_type = result.get('vehicle_class', 'Unknown')
                                 vehicle_counts[vehicle_type] = vehicle_counts.get(vehicle_type, 0) + 1
                             
                             # Store results
@@ -420,7 +483,7 @@ class VideoProcessor:
                         
                         # Count vehicle types
                         for result in frame_results:
-                            vehicle_type = result['vehicle_class']
+                            vehicle_type = result.get('vehicle_class', 'Unknown')
                             vehicle_counts[vehicle_type] = vehicle_counts.get(vehicle_type, 0) + 1
                         
                         # Store results
@@ -490,4 +553,148 @@ class VideoProcessor:
         print(f"   Average processing time: {avg_processing_time:.3f}s/frame")
         print(f"   Output saved to: {output_path}")
         
+        return summary
+    
+    def process_video_realtime(self, input_path: str, output_path: str, 
+                               save_results: bool = True, display: bool = True) -> Dict:
+        """
+        Process video in real-time mode with display and controls.
+        This mode prioritizes smooth playback and immediate feedback.
+        """
+        print(f"🎥 Processing video in REAL-TIME mode: {input_path}")
+
+        cap = cv2.VideoCapture(input_path)
+        if not cap.isOpened():
+            raise ValueError(f"Cannot open video: {input_path}")
+
+        fps = int(cap.get(cv2.CAP_PROP_FPS))
+        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+        print(f"   Resolution: {width}x{height}")
+        print(f"   FPS: {fps}")
+        print(f"   Total frames: {total_frames}")
+
+        fourcc = cv2.VideoWriter.fourcc(*'mp4v')
+        out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
+
+        frame_count = 0
+        total_detections = 0
+        vehicle_counts = defaultdict(int)
+        processing_times = deque(maxlen=fps) # Keep recent processing times for smooth FPS calc
+        all_results = []
+
+        # GPU warmup
+        print("🔥 Warming up GPU...")
+        dummy_frame = np.zeros((height, width, 3), dtype=np.uint8)
+        self.process_frame(dummy_frame)
+        torch.cuda.synchronize() if torch.cuda.is_available() else None
+
+        print("🚀 Starting real-time processing...")
+        print("📹 Press 'q' to quit, 'p' to pause/play")
+
+        paused = False
+        
+        # Initial timestamp for FPS calculation
+        fps_start_time = time.time()
+        frames_since_last_fps_calc = 0
+
+        while True:
+            if not paused:
+                ret, frame = cap.read()
+                if not ret:
+                    break # End of video
+
+                start_time = time.time()
+                
+                # Process single frame
+                annotated_frame, frame_results = self.process_frame(frame)
+                
+                processing_time = time.time() - start_time
+                processing_times.append(processing_time)
+                frame_count += 1
+                frames_since_last_fps_calc += 1
+
+                total_detections += len(frame_results)
+                for result in frame_results:
+                    vehicle_type = result.get('vehicle_class', 'Unknown')
+                    vehicle_counts[vehicle_type] += 1
+
+                if save_results:
+                    frame_data = {
+                        'frame_number': frame_count,
+                        'timestamp': frame_count / fps,
+                        'detections': frame_results
+                    }
+                    all_results.append(frame_data)
+                
+                out.write(annotated_frame)
+
+                # Calculate and display real-time FPS
+                if time.time() - fps_start_time >= 1.0:
+                    current_fps = frames_since_last_fps_calc / (time.time() - fps_start_time)
+                    fps_start_time = time.time()
+                    frames_since_last_fps_calc = 0
+                    
+                    avg_processing_time_display = np.mean(processing_times) if processing_times else 0
+                    
+                    cv2.putText(annotated_frame, f"FPS: {current_fps:.1f}", (10, 30), 
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+                    cv2.putText(annotated_frame, f"Proc: {avg_processing_time_display:.3f}s", (10, 70), 
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+                    cv2.putText(annotated_frame, f"Detections: {len(frame_results)}", (10, 110), 
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+                    
+                    if torch.cuda.is_available():
+                        cv2.putText(annotated_frame, f"GPU: {torch.cuda.memory_allocated() / 1e9:.1f}GB", (10, 150),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+
+
+                if display:
+                    cv2.imshow('Vehicle Detection - Real-time', annotated_frame)
+                    
+            key = cv2.waitKey(1) & 0xFF
+            if key == ord('q'):
+                break
+            elif key == ord('p'):
+                paused = not paused
+                print(f"{'▶️ Resumed' if not paused else '⏸️ Paused'} processing.")
+        
+        # Cleanup
+        cap.release()
+        out.release()
+        cv2.destroyAllWindows()
+
+        avg_processing_time_final = np.mean(processing_times) if processing_times else 0
+        total_processing_time = sum(processing_times)
+        
+        summary = {
+            'input_video': input_path,
+            'output_video': output_path,
+            'total_frames': frame_count,
+            'total_detections': total_detections,
+            'vehicle_counts': dict(vehicle_counts), # Convert defaultdict to dict for JSON
+            'avg_processing_time': avg_processing_time_final,
+            'total_processing_time': total_processing_time,
+            'fps': fps,
+            'resolution': (width, height),
+            'real_time_capable': True # Indicate this was run in real-time mode
+        }
+
+        if save_results:
+            results_path = output_path.replace('.mp4', '_results.json')
+            with open(results_path, 'w') as f:
+                json.dump({
+                    'summary': summary,
+                    'frame_results': all_results
+                }, f, indent=2)
+            print(f"💾 Real-time results saved to: {results_path}")
+
+        print("✅ Real-time video processing complete!")
+        print(f"   Total detections: {total_detections}")
+        print(f"   Vehicle counts: {dict(vehicle_counts)}")
+        print(f"   Average processing time: {avg_processing_time_final:.3f}s/frame")
+        print(f"   Output saved to: {output_path}")
+
         return summary 

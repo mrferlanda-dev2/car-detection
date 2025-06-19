@@ -28,13 +28,13 @@ class VehicleClassifier:
             checkpoint = torch.load(model_path, map_location=self.device, weights_only=True)
             
             # Get model info - handle missing class_names with fallback
-            if 'class_names' in checkpoint and 'num_classes' in checkpoint:
+            if 'class_names' in checkpoint:
                 self.class_names = checkpoint['class_names']
-                num_classes = checkpoint['num_classes']
+                num_classes = len(self.class_names)
             else:
                 # Fallback class names based on VeRi dataset structure
                 print("⚠️  class_names or num_classes not found in checkpoint, using VeRi fallback mapping")
-                self.class_names = ['City-Car', 'Double-Cabin', 'LCGC', 'MPV', 'Pick-Up', 'SUV', 'Sedan', 'Truk', 'Van']
+                self.class_names = ['Bus', 'City-Car', 'Double-Cabin', 'LCGC', 'MPV', 'Pick-up', 'SUV', 'Sedan', 'Truk', 'Van']
                 num_classes = len(self.class_names)
                 print(f"   Using {num_classes} classes: {self.class_names}")
                 
@@ -43,18 +43,24 @@ class VehicleClassifier:
                 num_classes = len(self.class_names)
                 print(f"   Fixed num_classes to: {num_classes}")
             
-            # Create model architecture (same as training)
-            self.model = torchvision.models.efficientnet_v2_m(weights=None)
+            # Create model architecture (same as training - ResNet50)
+            self.model = torchvision.models.resnet18(weights=None)
             
-            # Recreate classifier (match VeRi training architecture)
-            num_ftrs = 1280  # EfficientNet-V2-S features
-            self.model.classifier = nn.Sequential(
-                nn.Dropout(p=0.3),
-                nn.Linear(num_ftrs, 256),
-                nn.BatchNorm1d(256),
-                nn.ReLU(inplace=True),
-                nn.Dropout(p=0.2),
-                nn.Linear(256, num_classes)
+            # Recreate classifier (match training architecture exactly)
+            # For ResNet50, the input features to fc is 2048
+            num_ftrs = 512  # ResNet50's fc.in_features
+            dropout_rate = 0.3
+            self.model.fc = nn.Sequential(
+                nn.Dropout(p=dropout_rate),                    # index 0
+                nn.Linear(num_ftrs, 512),                      # index 1
+                nn.BatchNorm1d(512),                          # index 2
+                nn.ReLU(inplace=True),                        # index 3
+                nn.Dropout(p=dropout_rate * 0.7),             # index 4
+                nn.Linear(512, 256),                          # index 5
+                nn.BatchNorm1d(256),                          # index 6
+                nn.ReLU(inplace=True),                        # index 7
+                nn.Dropout(p=dropout_rate * 0.3),             # index 8
+                nn.Linear(256, num_classes)                   # index 9
             )
             
             # Load weights

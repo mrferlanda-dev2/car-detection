@@ -1,0 +1,34 @@
+2025-06-19 17:19:48,781 - INFO - Created organized folder structure:
+2025-06-19 17:19:48,781 - INFO -    Run directory: optimized_training\yolo12mn_full_20250619_171948
+2025-06-19 17:19:48,781 - INFO -    Logs: optimized_training\yolo12mn_full_20250619_171948\logs
+2025-06-19 17:19:48,782 - INFO -    Plots: optimized_training\yolo12mn_full_20250619_171948\plots
+2025-06-19 17:19:48,782 - INFO -    Weights: optimized_training\yolo12mn_full_20250619_171948\weights
+2025-06-19 17:19:48,955 - INFO - Starting optimized training...
+2025-06-19 17:19:48,955 - INFO -    Model: YOLO11N
+2025-06-19 17:19:48,956 - INFO -    Dataset: cvat_dataset_updated_single_class_restructured\data.yaml
+2025-06-19 17:19:48,956 - INFO -    Batch size: 24
+2025-06-19 17:19:48,956 - INFO -    Image size: 640
+2025-06-19 17:19:48,956 - INFO -    Epochs: 100
+2025-06-19 17:19:48,956 - INFO -    Disk caching: Enabled
+2025-06-19 17:19:48,956 - INFO -    Workers: 16
+2025-06-19 17:19:48,956 - INFO - GPU Status:
+2025-06-19 17:19:48,956 - INFO -    Memory allocated: 0.00GB
+2025-06-19 17:19:48,958 - INFO -    Memory cached: 0.00GB
+2025-06-19 17:24:10,011 - INFO - Training completed!
+2025-06-19 17:24:10,030 - INFO - Copied plot: confusion_matrix.png -> optimized_training\yolo12mn_full_20250619_171948\plots\confusion_matrix.png
+2025-06-19 17:24:10,042 - INFO - Copied plot: confusion_matrix_normalized.png -> optimized_training\yolo12mn_full_20250619_171948\plots\confusion_matrix_normalized.png
+2025-06-19 17:24:10,058 - INFO - Copied plot: F1_curve.png -> optimized_training\yolo12mn_full_20250619_171948\plots\F1_curve.png
+2025-06-19 17:24:10,071 - INFO - Copied plot: PR_curve.png -> optimized_training\yolo12mn_full_20250619_171948\plots\PR_curve.png
+2025-06-19 17:24:10,083 - INFO - Copied plot: P_curve.png -> optimized_training\yolo12mn_full_20250619_171948\plots\P_curve.png
+2025-06-19 17:24:10,101 - INFO - Copied plot: results.png -> optimized_training\yolo12mn_full_20250619_171948\plots\results.png
+2025-06-19 17:24:10,111 - INFO - Copied plot: R_curve.png -> optimized_training\yolo12mn_full_20250619_171948\plots\R_curve.png
+2025-06-19 17:24:10,117 - INFO - Created training summary: optimized_training\yolo12mn_full_20250619_171948\training_summary.txt
+2025-06-19 17:24:10,117 - INFO - Best model saved: optimized_training\yolo12mn_full_20250619_171948\weights\best.pt
+2025-06-19 17:24:10,117 - INFO - Running validation...
+2025-06-19 17:24:35,293 - INFO -    mAP50: 0.9309
+2025-06-19 17:24:35,293 - INFO -    mAP50-95: 0.6593
+2025-06-19 17:24:35,293 - INFO - All outputs organized in: optimized_training\yolo12mn_full_20250619_171948
+2025-06-19 17:24:35,319 - INFO -    Plots: optimized_training\yolo12mn_full_20250619_171948\plots
+2025-06-19 17:24:35,319 - INFO -    Weights: optimized_training\yolo12mn_full_20250619_171948\weights
+2025-06-19 17:24:35,320 - INFO -    Logs: optimized_training\yolo12mn_full_20250619_171948\logs
+2025-06-19 17:24:35,321 - INFO - GPU cache cleared

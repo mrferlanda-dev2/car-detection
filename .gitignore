@@ -1,5 +1,10 @@
 Dataset_Mobil_Indonesia_Balanced_backup
-*.pt
 scraper/
 dataset.zip
+*/cvat_dataset_updated_single_class_restructured
+*/dataset
+*/dataset_backup
+*/veri_classification_dataset
+*/models/*
+*.pt
 *.pth

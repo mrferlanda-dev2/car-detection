@@ -37,18 +37,23 @@ class VehicleClassifier:
             self.class_names = checkpoint['class_names']
             num_classes = checkpoint['num_classes']
             
-            # Create model architecture (same as training)
-            self.model = torchvision.models.efficientnet_v2_s(weights=None)
+            # Create model architecture (same as training - EfficientNet-V2-M)
+            self.model = torchvision.models.efficientnet_v2_m(weights=None)
             
-            # Recreate classifier (match VeRi training architecture)
-            num_ftrs = 1280  # EfficientNet-V2-S features
+            # Recreate classifier (match training architecture exactly)
+            num_ftrs = 1280  # EfficientNet-V2-M features
+            dropout_rate = 0.3
             self.model.classifier = nn.Sequential(
-                nn.Dropout(p=0.3),
-                nn.Linear(num_ftrs, 256),
-                nn.BatchNorm1d(256),
-                nn.ReLU(inplace=True),
-                nn.Dropout(p=0.2),
-                nn.Linear(256, num_classes)
+                nn.Dropout(p=dropout_rate),                    # index 0
+                nn.Linear(num_ftrs, 512),                      # index 1
+                nn.BatchNorm1d(512),                          # index 2
+                nn.ReLU(inplace=True),                        # index 3
+                nn.Dropout(p=dropout_rate * 0.7),             # index 4
+                nn.Linear(512, 256),                          # index 5
+                nn.BatchNorm1d(256),                          # index 6
+                nn.ReLU(inplace=True),                        # index 7
+                nn.Dropout(p=dropout_rate * 0.3),             # index 8
+                nn.Linear(256, num_classes)                   # index 9
             )
             
             # Load weights

@@ -1,0 +1,12 @@
+2025-06-19 21:41:18,417 - INFO - Starting hyperparameter optimization for resnet
+2025-06-19 21:41:18,417 - INFO - Number of trials: 30
+2025-06-19 21:41:18,417 - INFO - Data directory: dataset
+2025-06-19 21:41:18,418 - INFO - Device: cuda
+2025-06-19 21:41:18,418 - INFO - Log file: logs\optuna_tuning_resnet_30trials_20250619_214118.log
+2025-06-19 21:41:18,418 - INFO - ============================================================
+2025-06-19 21:41:18,421 - INFO - 
+Trial 1 - LR: 0.000133, Batch: 16, WD: 0.000003, Dropout: 0.16, Optim: adamw, Sched: cosine
+2025-06-19 21:42:28,125 - INFO -   Epoch 1/25 - Train: 0.573, Val: 0.746
+2025-06-19 21:43:16,706 - INFO -   Epoch 2/25 - Train: 0.764, Val: 0.824
+2025-06-19 21:43:59,338 - INFO -   Epoch 3/25 - Train: 0.826, Val: 0.860
+2025-06-19 21:44:43,208 - INFO -   Epoch 4/25 - Train: 0.859, Val: 0.887
