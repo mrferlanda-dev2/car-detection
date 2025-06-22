@@ -1,0 +1,12 @@
+2025-06-22 20:27:49,431 - INFO - Starting vehicle classifier training with efficientnetv2
+2025-06-22 20:27:49,431 - INFO - Using device: cuda:0
+2025-06-22 20:27:49,475 - INFO - Number of classes: 8
+2025-06-22 20:27:49,475 - INFO - Class names: ['Bus', 'City-Hatchback', 'MPV', 'Pick-up', 'SUV', 'Sedan', 'Truk', 'Van']
+2025-06-22 20:27:49,476 - INFO - Dataset sizes: {'train': 7124, 'val': 1600}
+2025-06-22 20:27:49,476 - INFO - Batch size: 32
+2025-06-22 20:27:49,874 - INFO - Total parameters: 20,968,280
+2025-06-22 20:27:49,874 - INFO - Trainable parameters: 19,146,704
+2025-06-22 20:27:49,876 - INFO - Starting model training
+2025-06-22 20:27:49,924 - INFO - Starting training for 1 epochs with patience 5
+2025-06-22 20:27:49,924 - INFO - Models will be saved every 5 epochs
+2025-06-22 20:27:49,924 - INFO - Epoch 1/1
