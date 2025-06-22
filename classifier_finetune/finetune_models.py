@@ -501,11 +501,25 @@ def main():
     parser.add_argument('--lr', type=float, default=0.001, help='Learning rate')
     parser.add_argument('--patience', type=int, default=5, help='Early stopping patience')
     parser.add_argument('--data-dir', type=str, default='dataset', help='Dataset directory')
+    parser.add_argument('--weight-decay', type=float, default=0.01, help='Weight decay')
+    parser.add_argument('--dropout-rate', type=float, default=0.3, help='Dropout rate')
     
     args = parser.parse_args()
     
     print(f"Vehicle Classification Fine-tuning - {args.model.upper()}")
     print("=" * 60)
+    
+    # Initialize variables for cleanup
+    model = None
+    history = None
+    best_val_acc = 0.0
+    val_accuracy = 0.0
+    test_accuracy = None
+    class_names = []
+    num_classes = 0
+    total_params = 0
+    trainable_params = 0
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     
     # Setup logging
     log_file = setup_logging('logs', args.model)
@@ -516,189 +530,216 @@ def main():
     logging.info(f"Using device: {device}")
     print(f"Using device: {device}")
     
-    # Data directory
-    data_dir = args.data_dir
-    if not os.path.exists(data_dir):
-        raise FileNotFoundError(f"Dataset directory {data_dir} not found.")
-    
-    # Create data transforms
-    data_transforms = create_data_transforms()
-    
-    # Load datasets
-    image_datasets = {x: datasets.ImageFolder(os.path.join(data_dir, x),
-                                              data_transforms[x],
-                                              loader=pil_loader)
-                      for x in ['train', 'val'] if os.path.exists(os.path.join(data_dir, x))}
-    
-    # Check if train/val directories exist
-    if len(image_datasets) == 0:
-        raise FileNotFoundError(f"No train/val directories found in {data_dir}. Please run split_dataset.py first.")
-    
-    if 'train' not in image_datasets:
-        raise FileNotFoundError(f"Training directory not found in {data_dir}")
-    
-    if 'val' not in image_datasets:
-        raise FileNotFoundError(f"Validation directory not found in {data_dir}")
-    
-    # Create data loaders
-    dataloaders = {
-        'train': torch.utils.data.DataLoader(image_datasets['train'], 
-                                            batch_size=args.batch_size,
-                                            shuffle=True, 
-                                            num_workers=8,
-                                            pin_memory=True),
-        'val': torch.utils.data.DataLoader(image_datasets['val'], 
-                                          batch_size=args.batch_size,
-                                          shuffle=False, 
-                                          num_workers=4,
-                                          pin_memory=True)
-    }
-    
-    dataset_sizes = {x: len(image_datasets[x]) for x in image_datasets.keys()}
-    class_names = image_datasets['train'].classes
-    num_classes = len(class_names)
-    
-    logging.info(f"Number of classes: {num_classes}")
-    logging.info(f"Class names: {class_names}")
-    logging.info(f"Dataset sizes: {dataset_sizes}")
-    logging.info(f"Batch size: {args.batch_size}")
-    
-    print(f"Number of classes: {num_classes}")
-    print(f"Class names: {class_names}")
-    print(f"Dataset sizes: {dataset_sizes}")
-    print(f"Batch size: {args.batch_size}")
-    
-    # Create model
-    model = create_model(args.model, num_classes, dropout_rate=0.3, device=device)
-    
-    # Count parameters
-    total_params = sum(p.numel() for p in model.parameters())
-    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    
-    logging.info(f"Total parameters: {total_params:,}")
-    logging.info(f"Trainable parameters: {trainable_params:,}")
-    print(f"Total parameters: {total_params:,}")
-    print(f"Trainable parameters: {trainable_params:,}")
-    
-    # Setup training
-    criterion = nn.CrossEntropyLoss(label_smoothing=0.1)
-    optimizer = optim.AdamW(filter(lambda p: p.requires_grad, model.parameters()), 
-                           lr=args.lr, weight_decay=0.01)
-    scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', 
-                                              factor=0.5, patience=3)
-    
-    # Train model
-    print("\nStarting training...")
-    logging.info("Starting model training")
-    
-    model, history, best_val_acc = train_model(
-        model=model,
-        dataloaders=dataloaders,
-        dataset_sizes=dataset_sizes,
-        learning_rate=args.lr,
-        batch_size=args.batch_size,
-        weight_decay=0.01,
-        dropout_rate=0.3,
-        criterion=criterion,
-        optimizer=optimizer,
-        scheduler=scheduler,
-        device=device,
-        num_epochs=args.epochs,
-        patience=args.patience,
-        save_every=5,
-        model_name=args.model
-    )
-    
-    # Save training history plot
-    plot_save_dir = Path('plots')
-    plot_save_dir.mkdir(exist_ok=True)
-    
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    history_plot_path = plot_save_dir / f'vehicle_classifier_{args.model}_training_history_{timestamp}.png'
-    plot_training_history(history, history_plot_path)
-    
-    # Evaluate on validation set
-    print("\n" + "="*50)
-    print("VALIDATION EVALUATION")
-    print("="*50)
-    
-    val_labels, val_preds, val_accuracy = evaluate_model(
-        model, dataloaders['val'], class_names, device, 'validation'
-    )
-    
-    # Plot validation confusion matrix
-    val_cm_path = plot_save_dir / f'vehicle_classifier_{args.model}_val_confusion_matrix_{timestamp}.png'
-    plot_confusion_matrix(val_labels, val_preds, class_names, val_cm_path, 'Validation Set')
-    
-    # Evaluate on test set if available
-    test_dir = os.path.join(data_dir, 'test')
-    if os.path.exists(test_dir):
-        print("\n" + "="*50)
-        print("TEST SET EVALUATION")
-        print("="*50)
+    try:
+        # Data directory
+        data_dir = args.data_dir
+        if not os.path.exists(data_dir):
+            raise FileNotFoundError(f"Dataset directory {data_dir} not found.")
         
-        # Create test dataset and dataloader
-        test_dataset = datasets.ImageFolder(test_dir, data_transforms['test'], loader=pil_loader)
-        test_dataloader = torch.utils.data.DataLoader(test_dataset, 
-                                                     batch_size=args.batch_size,
-                                                     shuffle=False, 
-                                                     num_workers=4,
-                                                     pin_memory=True)
+        # Create data transforms
+        data_transforms = create_data_transforms()
         
-        test_labels, test_preds, test_accuracy = evaluate_model(
-            model, test_dataloader, class_names, device, 'test'
+        # Load datasets
+        image_datasets = {x: datasets.ImageFolder(os.path.join(data_dir, x),
+                                                  data_transforms[x],
+                                                  loader=pil_loader)
+                          for x in ['train', 'val'] if os.path.exists(os.path.join(data_dir, x))}
+        
+        # Check if train/val directories exist
+        if len(image_datasets) == 0:
+            raise FileNotFoundError(f"No train/val directories found in {data_dir}. Please run split_dataset.py first.")
+        
+        if 'train' not in image_datasets:
+            raise FileNotFoundError(f"Training directory not found in {data_dir}")
+        
+        if 'val' not in image_datasets:
+            raise FileNotFoundError(f"Validation directory not found in {data_dir}")
+        
+        # Create data loaders
+        dataloaders = {
+            'train': torch.utils.data.DataLoader(image_datasets['train'], 
+                                                batch_size=args.batch_size,
+                                                shuffle=True, 
+                                                num_workers=8,
+                                                pin_memory=True),
+            'val': torch.utils.data.DataLoader(image_datasets['val'], 
+                                              batch_size=args.batch_size,
+                                              shuffle=False, 
+                                              num_workers=4,
+                                              pin_memory=True)
+        }
+        
+        dataset_sizes = {x: len(image_datasets[x]) for x in image_datasets.keys()}
+        class_names = image_datasets['train'].classes
+        num_classes = len(class_names)
+        
+        logging.info(f"Number of classes: {num_classes}")
+        logging.info(f"Class names: {class_names}")
+        logging.info(f"Dataset sizes: {dataset_sizes}")
+        logging.info(f"Batch size: {args.batch_size}")
+        
+        print(f"Number of classes: {num_classes}")
+        print(f"Class names: {class_names}")
+        print(f"Dataset sizes: {dataset_sizes}")
+        print(f"Batch size: {args.batch_size}")
+        
+        # Create model
+        model = create_model(args.model, num_classes, dropout_rate=args.dropout_rate, device=device)
+        
+        # Count parameters
+        total_params = sum(p.numel() for p in model.parameters())
+        trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+        
+        logging.info(f"Total parameters: {total_params:,}")
+        logging.info(f"Trainable parameters: {trainable_params:,}")
+        print(f"Total parameters: {total_params:,}")
+        print(f"Trainable parameters: {trainable_params:,}")
+        
+        # Setup training
+        criterion = nn.CrossEntropyLoss(label_smoothing=0.1)
+        optimizer = optim.AdamW(filter(lambda p: p.requires_grad, model.parameters()), 
+                               lr=args.lr, weight_decay=args.weight_decay)
+        scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', 
+                                                  factor=0.5, patience=3)
+        
+        # Train model
+        print("\nStarting training...")
+        logging.info("Starting model training")
+        
+        model, history, best_val_acc = train_model(
+            model=model,
+            dataloaders=dataloaders,
+            dataset_sizes=dataset_sizes,
+            learning_rate=args.lr,
+            batch_size=args.batch_size,
+            weight_decay=args.weight_decay,
+            dropout_rate=args.dropout_rate,
+            criterion=criterion,
+            optimizer=optimizer,
+            scheduler=scheduler,
+            device=device,
+            num_epochs=args.epochs,
+            patience=args.patience,
+            save_every=5,
+            model_name=args.model
         )
         
-        # Plot test confusion matrix
-        test_cm_path = plot_save_dir / f'vehicle_classifier_{args.model}_test_confusion_matrix_{timestamp}.png'
-        plot_confusion_matrix(test_labels, test_preds, class_names, test_cm_path, 'Test Set')
-    else:
-        print("No test directory found - skipping test evaluation")
+        # Save training history plot
+        plot_save_dir = Path('plots')
+        plot_save_dir.mkdir(exist_ok=True)
+        
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        history_plot_path = plot_save_dir / f'vehicle_classifier_{args.model}_training_history_{timestamp}.png'
+        plot_training_history(history, history_plot_path)
+        
+        # Evaluate on validation set
+        print("\n" + "="*50)
+        print("VALIDATION EVALUATION")
+        print("="*50)
+        
+        val_labels, val_preds, val_accuracy = evaluate_model(
+            model, dataloaders['val'], class_names, device, 'validation'
+        )
+        
+        # Plot validation confusion matrix
+        val_cm_path = plot_save_dir / f'vehicle_classifier_{args.model}_val_confusion_matrix_{timestamp}.png'
+        plot_confusion_matrix(val_labels, val_preds, class_names, val_cm_path, 'Validation Set')
+        
+        # Evaluate on test set if available
+        test_dir = os.path.join(data_dir, 'test')
+        if os.path.exists(test_dir):
+            print("\n" + "="*50)
+            print("TEST SET EVALUATION")
+            print("="*50)
+            
+            # Create test dataset and dataloader
+            test_dataset = datasets.ImageFolder(test_dir, data_transforms['test'], loader=pil_loader)
+            test_dataloader = torch.utils.data.DataLoader(test_dataset, 
+                                                         batch_size=args.batch_size,
+                                                         shuffle=False, 
+                                                         num_workers=4,
+                                                         pin_memory=True)
+            
+            test_labels, test_preds, test_accuracy = evaluate_model(
+                model, test_dataloader, class_names, device, 'test'
+            )
+            
+            # Plot test confusion matrix
+            test_cm_path = plot_save_dir / f'vehicle_classifier_{args.model}_test_confusion_matrix_{timestamp}.png'
+            plot_confusion_matrix(test_labels, test_preds, class_names, test_cm_path, 'Test Set')
+        else:
+            print("No test directory found - skipping test evaluation")
+            test_accuracy = None
+        
+        # Save model
+        model_save_dir = Path('models')
+        model_save_dir.mkdir(exist_ok=True)
+        
+        model_save_path = model_save_dir / f'vehicle_classifier_{args.model}_{timestamp}.pth'
+        torch.save({
+            'model_state_dict': model.state_dict(),
+            'optimizer_state_dict': optimizer.state_dict(),
+            'class_names': class_names,
+            'num_classes': num_classes,
+            'val_accuracy': val_accuracy,
+            'test_accuracy': test_accuracy,
+            'training_history': history,
+            'model_architecture': args.model,
+            'dataset': 'vehicle_classification'
+        }, model_save_path)
+        
+        # Final summary
+        print("\n" + "="*60)
+        print("TRAINING SUMMARY")
+        print("="*60)
+        
+        summary_info = f"""
+        Model: {args.model.upper()}
+        Dataset: Vehicle Classification
+        Classes: {num_classes} ({', '.join(class_names)})
+        
+        Final validation accuracy: {val_accuracy:.4f}
+        Final test accuracy: {f'{test_accuracy:.4f}' if test_accuracy is not None else 'N/A'}
+        
+        Total parameters: {total_params:,}
+        Trainable parameters: {trainable_params:,}
+        
+        Model saved: {model_save_path}
+        Log file: {log_file}
+        Training plots: {plot_save_dir}
+        """
+        
+        print(summary_info)
+        logging.info(summary_info)
+        
+        print("Training completed successfully!")
+        logging.info("Training completed successfully")
+        
+        val_accuracy = val_accuracy
+        test_accuracy = test_accuracy
+        class_names = class_names
+        num_classes = num_classes
+        total_params = total_params
+        trainable_params = trainable_params
+        timestamp = timestamp
+        model = model
+        history = history
+        best_val_acc = best_val_acc
+    except Exception as e:
+        print(f"Training failed: {e}")
+        logging.error(f"Training failed: {e}")
+        val_accuracy = 0.0
         test_accuracy = None
-    
-    # Save model
-    model_save_dir = Path('models')
-    model_save_dir.mkdir(exist_ok=True)
-    
-    model_save_path = model_save_dir / f'vehicle_classifier_{args.model}_{timestamp}.pth'
-    torch.save({
-        'model_state_dict': model.state_dict(),
-        'optimizer_state_dict': optimizer.state_dict(),
-        'class_names': class_names,
-        'num_classes': num_classes,
-        'val_accuracy': val_accuracy,
-        'test_accuracy': test_accuracy,
-        'training_history': history,
-        'model_architecture': args.model,
-        'dataset': 'vehicle_classification'
-    }, model_save_path)
-    
-    # Final summary
-    print("\n" + "="*60)
-    print("TRAINING SUMMARY")
-    print("="*60)
-    
-    summary_info = f"""
-    Model: {args.model.upper()}
-    Dataset: Vehicle Classification
-    Classes: {num_classes} ({', '.join(class_names)})
-    
-    Final validation accuracy: {val_accuracy:.4f}
-    Final test accuracy: {f'{test_accuracy:.4f}' if test_accuracy is not None else 'N/A'}
-    
-    Total parameters: {total_params:,}
-    Trainable parameters: {trainable_params:,}
-    
-    Model saved: {model_save_path}
-    Log file: {log_file}
-    Training plots: {plot_save_dir}
-    """
-    
-    print(summary_info)
-    logging.info(summary_info)
-    
-    print("Training completed successfully!")
-    logging.info("Training completed successfully")
+        class_names = []
+        num_classes = 0
+        total_params = 0
+        trainable_params = 0
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        model = None
+        history = None
+        best_val_acc = 0.0
+
+    return val_accuracy, test_accuracy, class_names, num_classes, total_params, trainable_params, timestamp, model, history, best_val_acc
 
 if __name__ == "__main__":
     main()
