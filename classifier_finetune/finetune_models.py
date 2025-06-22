@@ -218,109 +218,6 @@ def validate_epoch(model, dataloader, criterion, device):
     
     return epoch_loss, epoch_acc.item()
 
-def train_model(model_type='efficientnetv2', data_dir='dataset', learning_rate=0.001, 
-                batch_size=32, weight_decay=1e-4, dropout_rate=0.3, optimizer_name='adam',
-                scheduler_name='step', epochs=50, early_stopping_patience=10):
-    """Main training function with configurable parameters"""
-    
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print(f"Using device: {device}")
-    
-    # Create data transforms
-    train_transform, val_transform = get_data_transforms()
-    
-    # Create datasets
-    train_dataset = VehicleDataset(os.path.join(data_dir, 'train'), transform=train_transform)
-    val_dataset = VehicleDataset(os.path.join(data_dir, 'val'), transform=val_transform)
-    test_dataset = VehicleDataset(os.path.join(data_dir, 'test'), transform=val_transform)
-    
-    # Create data loaders
-    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=2)
-    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=2)
-    test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=2)
-    
-    # Create model
-    model = create_model(model_type, num_classes=len(train_dataset.classes), dropout_rate=dropout_rate, device=device)
-    
-    # Setup optimizer
-    if optimizer_name == 'adam':
-        optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
-    elif optimizer_name == 'adamw':
-        optimizer = optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
-    else:  # sgd
-        optimizer = optim.SGD(model.parameters(), lr=learning_rate, weight_decay=weight_decay, momentum=0.9)
-    
-    # Setup scheduler
-    if scheduler_name == 'step':
-        scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5)
-    elif scheduler_name == 'cosine':
-        scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
-    else:  # plateau
-        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', patience=5, factor=0.5)
-    
-    # Loss function
-    criterion = nn.CrossEntropyLoss()
-    
-    # Training loop
-    best_val_acc = 0.0
-    patience_counter = 0
-    
-    print(f"Starting training for {epochs} epochs")
-    print(f"Model: {model_type}, LR: {learning_rate}, Batch size: {batch_size}")
-    
-    for epoch in range(epochs):
-        # Training phase
-        train_loss, train_acc = train_epoch(model, train_loader, criterion, optimizer, device)
-        
-        # Validation phase
-        val_loss, val_acc = validate_epoch(model, val_loader, criterion, device)
-        
-        # Update scheduler
-        if scheduler_name == 'plateau':
-            scheduler.step(val_acc)
-        else:
-            scheduler.step()
-        
-        print(f'Epoch {epoch+1}/{epochs} - Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}, '
-              f'Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.4f}')
-        
-        # Early stopping
-        if val_acc > best_val_acc:
-            best_val_acc = val_acc
-            patience_counter = 0
-            # Save best model
-            torch.save(
-                {
-                    'model_state_dict': model.state_dict(),
-                    'optimizer_state_dict': optimizer.state_dict(),
-                    'scheduler_state_dict': scheduler.state_dict(),
-                    'best_acc': best_val_acc,
-                    'class_names': train_dataset.classes,
-                    'num_classes': len(train_dataset.classes),
-                }, f'best_{model_type}_model.pth'
-            )
-        else:
-            patience_counter += 1
-        
-        if patience_counter >= early_stopping_patience:
-            print(f'Early stopping triggered after {epoch+1} epochs')
-            break
-    
-    print(f'Training completed. Best validation accuracy: {best_val_acc:.4f}')
-    
-    # Load best model for test evaluation
-    checkpoint = torch.load(f'best_{model_type}_model.pth')
-    model.load_state_dict(checkpoint['model_state_dict'])
-    
-    # Evaluate on test set
-    print("\n" + "="*50)
-    print("TEST SET EVALUATION")
-    print("="*50)
-    test_loss, test_acc = validate_epoch(model, test_loader, criterion, device)
-    print(f'Test Loss: {test_loss:.4f}, Test Accuracy: {test_acc:.4f}')
-    
-    return model, best_val_acc, test_acc
-
 def setup_logging(log_dir, model_name):
     """Setup logging configuration"""
     log_dir = Path(log_dir)
@@ -376,6 +273,128 @@ def create_data_transforms():
     }
     return data_transforms
 
+def train_model(model, 
+                dataloaders, 
+                dataset_sizes,
+                learning_rate,
+                batch_size,
+                weight_decay,
+                dropout_rate,
+                optimizer_name,
+                scheduler_name,
+                criterion, 
+                optimizer, 
+                scheduler, 
+                device, 
+                num_epochs=25, 
+                patience=7, 
+                save_every=5, 
+                model_name="model"):
+    """Train the model with early stopping and periodic model saving"""
+    since = time.time()
+    
+    best_model_wts = copy.deepcopy(model.state_dict())
+    best_acc = 0.0
+    epochs_no_improve = 0
+    
+    history = {'train_loss': [], 'train_acc': [], 'val_loss': [], 'val_acc': []}
+    
+    # Create models directory for periodic saves
+    model_save_dir = Path('models')
+    model_save_dir.mkdir(exist_ok=True)
+    
+    logging.info(f"Starting training for {num_epochs} epochs with patience {patience}")
+    logging.info(f"Models will be saved every {save_every} epochs")
+    
+    for epoch in range(num_epochs):
+        logging.info(f'Epoch {epoch+1}/{num_epochs}')
+        print(f'Epoch {epoch+1}/{num_epochs}')
+        print('-' * 20)
+        
+        # Each epoch has a training and validation phase
+        for phase in ['train', 'val']:
+            if phase == 'train':
+                model.train()
+            else:
+                model.eval()
+            
+            running_loss = 0.0
+            running_corrects = 0
+            
+            # Iterate over data with progress bar
+            for inputs, labels in tqdm(dataloaders[phase], desc=f"{phase.capitalize()} Epoch {epoch+1}"):
+                inputs = inputs.to(device)
+                labels = labels.to(device)
+                
+                optimizer.zero_grad()
+                
+                with torch.set_grad_enabled(phase == 'train'):
+                    outputs = model(inputs)
+                    _, preds = torch.max(outputs, 1)
+                    loss = criterion(outputs, labels)
+                    
+                    if phase == 'train':
+                        loss.backward()
+                        optimizer.step()
+                
+                running_loss += loss.item() * inputs.size(0)
+                running_corrects += torch.sum(preds == labels.data)
+            
+            epoch_loss = running_loss / dataset_sizes[phase]
+            epoch_acc = running_corrects.double() / dataset_sizes[phase]
+            
+            history[f'{phase}_loss'].append(epoch_loss)
+            history[f'{phase}_acc'].append(epoch_acc.item())
+            
+            logging.info(f'{phase} Loss: {epoch_loss:.4f} Acc: {epoch_acc:.4f}')
+            print(f'{phase} Loss: {epoch_loss:.4f} Acc: {epoch_acc:.4f}')
+            
+            # Update scheduler and check for best model
+            if phase == 'val':
+                scheduler.step(epoch_acc)
+                if epoch_acc > best_acc:
+                    best_acc = epoch_acc
+                    best_model_wts = copy.deepcopy(model.state_dict())
+                    epochs_no_improve = 0
+                    logging.info(f'New best model with validation accuracy: {best_acc:.4f}')
+                else:
+                    epochs_no_improve += 1
+        
+        # Save model every save_every epochs
+        if (epoch + 1) % save_every == 0:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            checkpoint_path = model_save_dir / f'vehicle_classifier_{model_name}_epoch_{epoch+1}_{timestamp}.pth'
+            torch.save({
+                'epoch': epoch + 1,
+                'model_state_dict': model.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+                'scheduler_state_dict': scheduler.state_dict(),
+                'best_acc': best_acc,
+                'history': history,
+                'model_architecture': model_name,
+            }, checkpoint_path)
+            logging.info(f'Model checkpoint saved at epoch {epoch+1}: {checkpoint_path}')
+            print(f'Model checkpoint saved at epoch {epoch+1}: {checkpoint_path}')
+        
+        print()
+        
+        # Early stopping
+        if epochs_no_improve >= patience:
+            logging.info(f'Early stopping triggered after {epoch+1} epochs')
+            print(f'Early stopping triggered after {epoch+1} epochs')
+            break
+    
+    time_elapsed = time.time() - since
+    logging.info(f'Training complete in {time_elapsed // 60:.0f}m {time_elapsed % 60:.0f}s')
+    logging.info(f'Best val Acc: {best_acc:4f}')
+    
+    print(f'Training complete in {time_elapsed // 60:.0f}m {time_elapsed % 60:.0f}s')
+    print(f'Best val Acc: {best_acc:4f}')
+    
+    # Load best model weights
+    model.load_state_dict(best_model_wts)
+    
+    return model, history, best_acc.item()
 
 def plot_training_history(history, save_path):
     """Plot and save training history"""
@@ -575,8 +594,23 @@ def main():
     logging.info("Starting model training")
     
     model, history, best_val_acc = train_model(
-        model, dataloaders, dataset_sizes, criterion, optimizer, scheduler, device,
-        num_epochs=args.epochs, patience=args.patience, save_every=5, model_name=args.model
+        model=model,
+        dataloaders=dataloaders,
+        dataset_sizes=dataset_sizes,
+        learning_rate=args.lr,
+        batch_size=args.batch_size,
+        weight_decay=0.01,
+        dropout_rate=0.3,
+        optimizer_name='AdamW',
+        scheduler_name='ReduceLROnPlateau',
+        criterion=criterion,
+        optimizer=optimizer,
+        scheduler=scheduler,
+        device=device,
+        num_epochs=args.epochs,
+        patience=args.patience,
+        save_every=5,
+        model_name=args.model
     )
     
     # Save training history plot
