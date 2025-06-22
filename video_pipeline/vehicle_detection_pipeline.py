@@ -70,12 +70,12 @@ class VehicleClassifier:
                 transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
             ])
             
-            print(f"✅ Vehicle classifier loaded successfully")
+            print(f"   Vehicle classifier loaded successfully")
             print(f"   Classes: {self.class_names}")
             print(f"   Device: {self.device}")
             
         except Exception as e:
-            print(f"❌ Error loading vehicle classifier: {e}")
+            print(f"Error loading vehicle classifier: {e}")
             raise
     
     def classify(self, image: np.ndarray) -> Tuple[str, float]:
@@ -103,7 +103,7 @@ class VehicleClassifier:
             return predicted_class, confidence_score
             
         except Exception as e:
-            print(f"❌ Error in classification: {e}")
+            print(f"Error in classification: {e}")
             return "Unknown", 0.0
 
 class YOLODetector:
@@ -188,7 +188,7 @@ class YOLODetector:
             return detections
             
         except Exception as e:
-            print(f"❌ Error in detection: {e}")
+            print(f"Error in detection: {e}")
             return []
 
 class VideoProcessor:
@@ -198,7 +198,7 @@ class VideoProcessor:
                  classifier_model_path: str = "improved_vehicle_classifier.pth",
                  device: str = 'auto'):
         
-        print("🚀 Initializing Vehicle Detection Pipeline...")
+        print("Initializing Vehicle Detection Pipeline...")
         
         # Initialize models
         self.detector = YOLODetector(yolo_model_path, device)
@@ -208,7 +208,7 @@ class VideoProcessor:
         self.conf_threshold = 0.5
         self.min_detection_size = 50  # Minimum width/height for classification
         
-        print("✅ Pipeline initialized successfully!")
+        print("Pipeline initialized successfully!")
     
     def process_frame(self, frame: np.ndarray) -> Tuple[np.ndarray, List[Dict]]:
         """Process a single frame"""
@@ -294,7 +294,7 @@ class VideoProcessor:
                      save_results: bool = True, display: bool = False) -> Dict:
         """Process entire video"""
         
-        print(f"🎥 Processing video: {input_path}")
+        print(f"Processing video: {input_path}")
         
         # Open video
         cap = cv2.VideoCapture(input_path)
@@ -400,9 +400,9 @@ class VideoProcessor:
                     'summary': summary,
                     'frame_results': all_results
                 }, f, indent=2)
-            print(f"💾 Results saved to: {results_path}")
+            print(f"Results saved to: {results_path}")
         
-        print("✅ Video processing complete!")
+        print("    Video processing complete!")
         print(f"   Total detections: {total_detections}")
         print(f"   Vehicle counts: {vehicle_counts}")
         print(f"   Average processing time: {avg_processing_time:.3f}s/frame")
@@ -449,10 +449,10 @@ def main():
             display=args.display
         )
         
-        print("\n🎉 Pipeline completed successfully!")
+        print("\nPipeline completed successfully!")
         
     except Exception as e:
-        print(f"❌ Pipeline failed: {e}")
+        print(f"Pipeline failed: {e}")
         raise
 
 if __name__ == "__main__":

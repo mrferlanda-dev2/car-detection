@@ -1,6 +1,7 @@
 # Vehicle Detection with YOLOv12n + ResNet18
 
-![Demo GIF](assets/0620.gif)
+![Demo GIF](assets/det.gif)
+
 
 ## Overview
 
@@ -17,27 +18,35 @@ This project implements a robust vehicle detection and classification pipeline u
 
 ---
 
+![Demo Classifier](/assets/classifier.gif)
+
 ## Training Results
 
+
 ### Vehicle Classifier (ResNet18)
+```
+Classification Report:
+                precision    recall  f1-score   support
 
-- **Classes**: Bus, City-Car, Double-Cabin, Hatchback, LCGC, MPV, Pick-up, SUV, Sedan, Truk, Van
-- **Training Set Size**: 7,040 images
-- **Validation Set Size**: 1,760 images
-- **Final Validation Accuracy**: **94.94%**
-- **Average Precision**: 0.9503
-- **Average Recall**: 0.9494
-- **Average F1-Score**: 0.9495
+           Bus       1.00      1.00      1.00        30
+City-Hatchback       0.97      0.97      0.97        59
+           MPV       1.00      0.97      0.98        30
+       Pick-up       1.00      0.97      0.98        30
+           SUV       0.97      0.93      0.95        30
+         Sedan       0.90      0.93      0.92        30
+          Truk       0.97      0.97      0.97        30
+           Van       0.94      1.00      0.97        30
 
-**Confusion Matrix:**
-![Confusion Matrix](classifier_finetune/plots/vehicle_classifier_resnet_val_confusion_matrix_20250619_222145.png)
-
-**Training History:**
-![Training History](classifier_finetune/plots/vehicle_classifier_resnet_training_history_20250619_222145.png)
+      accuracy                           0.97       269
+     macro avg       0.97      0.97      0.97       269
+  weighted avg       0.97      0.97      0.97       269
+  ```
+![Result](/assets/vehicle_classifier_resnet_training_history_20250622_143208.png)
+![ConfusisonMatrix](/assets/vehicle_classifier_resnet_test_confusion_matrix_20250622_143208.png)
 
 ---
 
-*For more details, see `classifier_finetune/logs/vehicle_classifier_resnet_20250619_214824.log`.*
+*For more details, see `classifier_finetune\logs\vehicle_classifier_resnet_20250622_141421_best.log`.*
 
 ---
 
@@ -66,12 +75,12 @@ pip install -r requirements.txt
 #### Download Pre-trained Models
 
 **Vehicle Classifier Model:**
-- Download from: https://drive.google.com/file/d/1GIPpAT8XToLvSl4nFd1a0rboolKaXvR0/view?usp=drive_link
-- Place the file in: `video_pipeline/classifier_model/vehicle_classifier_resnet_20250619_222145.pth`
+- Download from: https://drive.google.com/file/d/1jzGNa52w7i_pKoagJo_tuO5ESmVY2zno/view?usp=sharing
+- Place the file in: `video_pipeline/classifier_model`
 
 **Object Detection Model:**
 - Download from: https://drive.google.com/file/d/1qK-hC_36A58VjrpH0CmAYv9YqJsi8fQY/view?usp=drive_link
-- Place the file in: `video_pipeline/det_model/yolo12_fine_tuned.pt`
+- Place the file in: `video_pipeline/det_model`
 
 ### 3. Run the Pipeline
 
@@ -80,7 +89,7 @@ The main entry point for the pipeline is `video_pipeline/main.py`. You can run t
 #### Real-time Mode with DeepSORT
 
 ```bash
-python video_pipeline/main.py video_pipeline/inputs/traffic_test.mp4 --classifier-model video_pipeline/classifier_model/vehicle_classifier_resnet_20250619_222145.pth --yolo-model video_pipeline/det_model/yolo12_fine_tuned.pt
+python video_pipeline/main.py video_pipeline/inputs/traffic_test_10s.mp4  --classifier-model .\video_pipeline\classifier_model\vehicle_classifier_resnet_20250622_143208_best_model.pth --yolo-model video_pipeline/det_model/yolo12_fine_tuned.pt --conf-threshold 0.3 --realtime --output output_with_classifier_and_deepsort.mp4  
 ```
 
 - Runs with real-time display and classification.
@@ -88,7 +97,7 @@ python video_pipeline/main.py video_pipeline/inputs/traffic_test.mp4 --classifie
 #### Simple Tracker Mode
 
 ```bash
-python video_pipeline/main.py video_pipeline/inputs/traffic_test.mp4 --simple-tracker --classifier-model video_pipeline/classifier_model/vehicle_classifier_resnet_20250619_222145.pth --yolo-model video_pipeline/det_model/yolo12_fine_tuned.pt
+python video_pipeline/main.py video_pipeline/inputs/traffic_test_10s.mp4 --simple-tracker --classifier-model .\video_pipeline\classifier_model\vehicle_classifier_resnet_20250622_143208_best_model.pth --yolo-model video_pipeline/det_model/yolo12_fine_tuned.pt --conf-threshold 0.3 --realtime --output output_with_classifier.mp4
 ```
 
 - Uses a simple centroid tracker instead of DeepSORT.

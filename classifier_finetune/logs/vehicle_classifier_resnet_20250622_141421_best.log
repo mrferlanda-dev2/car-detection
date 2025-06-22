@@ -1,0 +1,298 @@
+2025-06-22 14:14:21,987 - INFO - Starting vehicle classifier training with resnet
+2025-06-22 14:14:21,987 - INFO - Using device: cuda:0
+2025-06-22 14:14:22,001 - INFO - Number of classes: 8
+2025-06-22 14:14:22,001 - INFO - Class names: ['Bus', 'City-Hatchback', 'MPV', 'Pick-up', 'SUV', 'Sedan', 'Truk', 'Van']
+2025-06-22 14:14:22,001 - INFO - Dataset sizes: {'train': 7124, 'val': 1600}
+2025-06-22 14:14:22,001 - INFO - Batch size: 64
+2025-06-22 14:14:23,505 - INFO - Total parameters: 11,574,088
+2025-06-22 14:14:23,505 - INFO - Trainable parameters: 8,791,304
+2025-06-22 14:14:23,506 - INFO - Starting model training
+2025-06-22 14:14:23,514 - INFO - Starting training for 100 epochs with patience 15
+2025-06-22 14:14:23,514 - INFO - Models will be saved every 5 epochs
+2025-06-22 14:14:23,514 - INFO - Epoch 1/100
+2025-06-22 14:14:39,542 - INFO - train Loss: 1.2901 Acc: 0.6120
+2025-06-22 14:14:41,442 - INFO - val Loss: 1.1019 Acc: 0.7044
+2025-06-22 14:14:41,455 - INFO - New best model with validation accuracy: 0.7044
+2025-06-22 14:14:41,455 - INFO - Epoch 2/100
+2025-06-22 14:14:56,116 - INFO - train Loss: 1.0292 Acc: 0.7437
+2025-06-22 14:14:57,929 - INFO - val Loss: 0.9925 Acc: 0.7575
+2025-06-22 14:14:57,938 - INFO - New best model with validation accuracy: 0.7575
+2025-06-22 14:14:57,938 - INFO - Epoch 3/100
+2025-06-22 14:15:12,921 - INFO - train Loss: 0.9147 Acc: 0.8061
+2025-06-22 14:15:14,845 - INFO - val Loss: 0.9213 Acc: 0.8100
+2025-06-22 14:15:14,854 - INFO - New best model with validation accuracy: 0.8100
+2025-06-22 14:15:14,854 - INFO - Epoch 4/100
+2025-06-22 14:15:29,720 - INFO - train Loss: 0.8181 Acc: 0.8544
+2025-06-22 14:15:31,553 - INFO - val Loss: 0.7998 Acc: 0.8475
+2025-06-22 14:15:31,561 - INFO - New best model with validation accuracy: 0.8475
+2025-06-22 14:15:31,561 - INFO - Epoch 5/100
+2025-06-22 14:15:46,718 - INFO - train Loss: 0.7585 Acc: 0.8789
+2025-06-22 14:15:48,593 - INFO - val Loss: 0.7805 Acc: 0.8619
+2025-06-22 14:15:48,600 - INFO - New best model with validation accuracy: 0.8619
+2025-06-22 14:15:48,724 - INFO - Model checkpoint saved at epoch 5: models/vehicle_classifier_resnet_epoch_5_20250622_141548.pth
+2025-06-22 14:15:48,725 - INFO - Epoch 6/100
+2025-06-22 14:16:03,919 - INFO - train Loss: 0.7377 Acc: 0.8884
+2025-06-22 14:16:05,713 - INFO - val Loss: 0.7585 Acc: 0.8769
+2025-06-22 14:16:05,721 - INFO - New best model with validation accuracy: 0.8769
+2025-06-22 14:16:05,721 - INFO - Epoch 7/100
+2025-06-22 14:16:20,917 - INFO - train Loss: 0.7144 Acc: 0.8964
+2025-06-22 14:16:22,727 - INFO - val Loss: 0.6711 Acc: 0.9125
+2025-06-22 14:16:22,734 - INFO - New best model with validation accuracy: 0.9125
+2025-06-22 14:16:22,734 - INFO - Epoch 8/100
+2025-06-22 14:16:37,719 - INFO - train Loss: 0.6738 Acc: 0.9159
+2025-06-22 14:16:39,488 - INFO - val Loss: 0.6914 Acc: 0.8969
+2025-06-22 14:16:39,488 - INFO - Epoch 9/100
+2025-06-22 14:16:54,245 - INFO - train Loss: 0.6603 Acc: 0.9225
+2025-06-22 14:16:56,054 - INFO - val Loss: 0.6623 Acc: 0.9150
+2025-06-22 14:16:56,062 - INFO - New best model with validation accuracy: 0.9150
+2025-06-22 14:16:56,062 - INFO - Epoch 10/100
+2025-06-22 14:17:11,029 - INFO - train Loss: 0.6484 Acc: 0.9227
+2025-06-22 14:17:12,798 - INFO - val Loss: 0.7589 Acc: 0.8850
+2025-06-22 14:17:12,889 - INFO - Model checkpoint saved at epoch 10: models/vehicle_classifier_resnet_epoch_10_20250622_141712.pth
+2025-06-22 14:17:12,889 - INFO - Epoch 11/100
+2025-06-22 14:17:27,901 - INFO - train Loss: 0.6246 Acc: 0.9375
+2025-06-22 14:17:29,815 - INFO - val Loss: 0.6653 Acc: 0.9169
+2025-06-22 14:17:29,823 - INFO - New best model with validation accuracy: 0.9169
+2025-06-22 14:17:29,823 - INFO - Epoch 12/100
+2025-06-22 14:17:44,813 - INFO - train Loss: 0.6155 Acc: 0.9396
+2025-06-22 14:17:46,638 - INFO - val Loss: 0.6716 Acc: 0.9081
+2025-06-22 14:17:46,638 - INFO - Epoch 13/100
+2025-06-22 14:18:01,818 - INFO - train Loss: 0.6039 Acc: 0.9469
+2025-06-22 14:18:03,728 - INFO - val Loss: 0.6696 Acc: 0.9181
+2025-06-22 14:18:03,737 - INFO - New best model with validation accuracy: 0.9181
+2025-06-22 14:18:03,737 - INFO - Epoch 14/100
+2025-06-22 14:18:18,423 - INFO - train Loss: 0.5897 Acc: 0.9534
+2025-06-22 14:18:20,335 - INFO - val Loss: 0.6447 Acc: 0.9256
+2025-06-22 14:18:20,342 - INFO - New best model with validation accuracy: 0.9256
+2025-06-22 14:18:20,342 - INFO - Epoch 15/100
+2025-06-22 14:18:35,594 - INFO - train Loss: 0.6100 Acc: 0.9416
+2025-06-22 14:18:37,509 - INFO - val Loss: 0.6579 Acc: 0.9175
+2025-06-22 14:18:37,605 - INFO - Model checkpoint saved at epoch 15: models/vehicle_classifier_resnet_epoch_15_20250622_141837.pth
+2025-06-22 14:18:37,605 - INFO - Epoch 16/100
+2025-06-22 14:18:52,727 - INFO - train Loss: 0.5820 Acc: 0.9559
+2025-06-22 14:18:54,645 - INFO - val Loss: 0.6298 Acc: 0.9331
+2025-06-22 14:18:54,654 - INFO - New best model with validation accuracy: 0.9331
+2025-06-22 14:18:54,654 - INFO - Epoch 17/100
+2025-06-22 14:19:09,826 - INFO - train Loss: 0.5729 Acc: 0.9601
+2025-06-22 14:19:11,652 - INFO - val Loss: 0.6448 Acc: 0.9287
+2025-06-22 14:19:11,653 - INFO - Epoch 18/100
+2025-06-22 14:19:26,527 - INFO - train Loss: 0.5697 Acc: 0.9611
+2025-06-22 14:19:28,360 - INFO - val Loss: 0.6325 Acc: 0.9331
+2025-06-22 14:19:28,360 - INFO - Epoch 19/100
+2025-06-22 14:19:43,336 - INFO - train Loss: 0.5571 Acc: 0.9662
+2025-06-22 14:19:45,168 - INFO - val Loss: 0.6242 Acc: 0.9394
+2025-06-22 14:19:45,181 - INFO - New best model with validation accuracy: 0.9394
+2025-06-22 14:19:45,181 - INFO - Epoch 20/100
+2025-06-22 14:20:00,019 - INFO - train Loss: 0.5583 Acc: 0.9653
+2025-06-22 14:20:01,902 - INFO - val Loss: 0.6241 Acc: 0.9325
+2025-06-22 14:20:02,000 - INFO - Model checkpoint saved at epoch 20: models/vehicle_classifier_resnet_epoch_20_20250622_142001.pth
+2025-06-22 14:20:02,001 - INFO - Epoch 21/100
+2025-06-22 14:20:17,043 - INFO - train Loss: 0.5569 Acc: 0.9669
+2025-06-22 14:20:18,962 - INFO - val Loss: 0.6561 Acc: 0.9263
+2025-06-22 14:20:18,962 - INFO - Epoch 22/100
+2025-06-22 14:20:33,947 - INFO - train Loss: 0.5548 Acc: 0.9688
+2025-06-22 14:20:35,822 - INFO - val Loss: 0.6445 Acc: 0.9256
+2025-06-22 14:20:35,823 - INFO - Epoch 23/100
+2025-06-22 14:20:50,717 - INFO - train Loss: 0.5561 Acc: 0.9659
+2025-06-22 14:20:52,575 - INFO - val Loss: 0.6250 Acc: 0.9331
+2025-06-22 14:20:52,576 - INFO - Epoch 24/100
+2025-06-22 14:21:07,726 - INFO - train Loss: 0.5244 Acc: 0.9796
+2025-06-22 14:21:09,545 - INFO - val Loss: 0.5899 Acc: 0.9456
+2025-06-22 14:21:09,553 - INFO - New best model with validation accuracy: 0.9456
+2025-06-22 14:21:09,553 - INFO - Epoch 25/100
+2025-06-22 14:21:24,619 - INFO - train Loss: 0.5133 Acc: 0.9836
+2025-06-22 14:21:26,502 - INFO - val Loss: 0.5936 Acc: 0.9506
+2025-06-22 14:21:26,511 - INFO - New best model with validation accuracy: 0.9506
+2025-06-22 14:21:26,649 - INFO - Model checkpoint saved at epoch 25: models/vehicle_classifier_resnet_epoch_25_20250622_142126.pth
+2025-06-22 14:21:26,649 - INFO - Epoch 26/100
+2025-06-22 14:21:41,506 - INFO - train Loss: 0.5045 Acc: 0.9874
+2025-06-22 14:21:43,328 - INFO - val Loss: 0.5907 Acc: 0.9487
+2025-06-22 14:21:43,329 - INFO - Epoch 27/100
+2025-06-22 14:21:58,320 - INFO - train Loss: 0.5076 Acc: 0.9872
+2025-06-22 14:22:00,251 - INFO - val Loss: 0.5935 Acc: 0.9481
+2025-06-22 14:22:00,252 - INFO - Epoch 28/100
+2025-06-22 14:22:15,215 - INFO - train Loss: 0.5080 Acc: 0.9853
+2025-06-22 14:22:17,121 - INFO - val Loss: 0.5929 Acc: 0.9513
+2025-06-22 14:22:17,129 - INFO - New best model with validation accuracy: 0.9513
+2025-06-22 14:22:17,129 - INFO - Epoch 29/100
+2025-06-22 14:22:32,220 - INFO - train Loss: 0.5069 Acc: 0.9851
+2025-06-22 14:22:34,005 - INFO - val Loss: 0.6003 Acc: 0.9475
+2025-06-22 14:22:34,005 - INFO - Epoch 30/100
+2025-06-22 14:22:49,230 - INFO - train Loss: 0.5025 Acc: 0.9886
+2025-06-22 14:22:51,144 - INFO - val Loss: 0.5827 Acc: 0.9500
+2025-06-22 14:22:51,230 - INFO - Model checkpoint saved at epoch 30: models/vehicle_classifier_resnet_epoch_30_20250622_142251.pth
+2025-06-22 14:22:51,230 - INFO - Epoch 31/100
+2025-06-22 14:23:06,328 - INFO - train Loss: 0.5008 Acc: 0.9896
+2025-06-22 14:23:08,173 - INFO - val Loss: 0.5776 Acc: 0.9531
+2025-06-22 14:23:08,180 - INFO - New best model with validation accuracy: 0.9531
+2025-06-22 14:23:08,180 - INFO - Epoch 32/100
+2025-06-22 14:23:23,319 - INFO - train Loss: 0.5026 Acc: 0.9888
+2025-06-22 14:23:25,316 - INFO - val Loss: 0.5775 Acc: 0.9556
+2025-06-22 14:23:25,323 - INFO - New best model with validation accuracy: 0.9556
+2025-06-22 14:23:25,323 - INFO - Epoch 33/100
+2025-06-22 14:23:40,312 - INFO - train Loss: 0.5029 Acc: 0.9883
+2025-06-22 14:23:42,221 - INFO - val Loss: 0.6044 Acc: 0.9425
+2025-06-22 14:23:42,222 - INFO - Epoch 34/100
+2025-06-22 14:23:57,314 - INFO - train Loss: 0.5030 Acc: 0.9883
+2025-06-22 14:23:59,147 - INFO - val Loss: 0.5939 Acc: 0.9481
+2025-06-22 14:23:59,148 - INFO - Epoch 35/100
+2025-06-22 14:24:14,232 - INFO - train Loss: 0.5010 Acc: 0.9888
+2025-06-22 14:24:16,102 - INFO - val Loss: 0.6027 Acc: 0.9525
+2025-06-22 14:24:16,240 - INFO - Model checkpoint saved at epoch 35: models/vehicle_classifier_resnet_epoch_35_20250622_142416.pth
+2025-06-22 14:24:16,241 - INFO - Epoch 36/100
+2025-06-22 14:24:31,331 - INFO - train Loss: 0.5010 Acc: 0.9898
+2025-06-22 14:24:33,190 - INFO - val Loss: 0.6266 Acc: 0.9381
+2025-06-22 14:24:33,191 - INFO - Epoch 37/100
+2025-06-22 14:24:48,315 - INFO - train Loss: 0.4949 Acc: 0.9906
+2025-06-22 14:24:50,128 - INFO - val Loss: 0.5896 Acc: 0.9550
+2025-06-22 14:24:50,128 - INFO - Epoch 38/100
+2025-06-22 14:25:05,120 - INFO - train Loss: 0.4865 Acc: 0.9956
+2025-06-22 14:25:06,939 - INFO - val Loss: 0.5834 Acc: 0.9550
+2025-06-22 14:25:06,939 - INFO - Epoch 39/100
+2025-06-22 14:25:21,918 - INFO - train Loss: 0.4851 Acc: 0.9954
+2025-06-22 14:25:23,785 - INFO - val Loss: 0.5970 Acc: 0.9494
+2025-06-22 14:25:23,785 - INFO - Epoch 40/100
+2025-06-22 14:25:38,827 - INFO - train Loss: 0.4879 Acc: 0.9935
+2025-06-22 14:25:40,765 - INFO - val Loss: 0.5802 Acc: 0.9550
+2025-06-22 14:25:40,888 - INFO - Model checkpoint saved at epoch 40: models/vehicle_classifier_resnet_epoch_40_20250622_142540.pth
+2025-06-22 14:25:40,888 - INFO - Epoch 41/100
+2025-06-22 14:25:55,919 - INFO - train Loss: 0.4851 Acc: 0.9954
+2025-06-22 14:25:57,737 - INFO - val Loss: 0.5824 Acc: 0.9569
+2025-06-22 14:25:57,745 - INFO - New best model with validation accuracy: 0.9569
+2025-06-22 14:25:57,745 - INFO - Epoch 42/100
+2025-06-22 14:26:12,628 - INFO - train Loss: 0.4819 Acc: 0.9959
+2025-06-22 14:26:14,563 - INFO - val Loss: 0.5788 Acc: 0.9594
+2025-06-22 14:26:14,570 - INFO - New best model with validation accuracy: 0.9594
+2025-06-22 14:26:14,570 - INFO - Epoch 43/100
+2025-06-22 14:26:29,615 - INFO - train Loss: 0.4829 Acc: 0.9962
+2025-06-22 14:26:31,460 - INFO - val Loss: 0.5822 Acc: 0.9575
+2025-06-22 14:26:31,460 - INFO - Epoch 44/100
+2025-06-22 14:26:46,336 - INFO - train Loss: 0.4839 Acc: 0.9949
+2025-06-22 14:26:48,196 - INFO - val Loss: 0.5809 Acc: 0.9581
+2025-06-22 14:26:48,196 - INFO - Epoch 45/100
+2025-06-22 14:27:03,021 - INFO - train Loss: 0.4827 Acc: 0.9958
+2025-06-22 14:27:04,802 - INFO - val Loss: 0.5828 Acc: 0.9575
+2025-06-22 14:27:04,889 - INFO - Model checkpoint saved at epoch 45: models/vehicle_classifier_resnet_epoch_45_20250622_142704.pth
+2025-06-22 14:27:04,889 - INFO - Epoch 46/100
+2025-06-22 14:27:19,930 - INFO - train Loss: 0.4813 Acc: 0.9968
+2025-06-22 14:27:21,765 - INFO - val Loss: 0.5730 Acc: 0.9587
+2025-06-22 14:27:21,765 - INFO - Epoch 47/100
+2025-06-22 14:27:36,744 - INFO - train Loss: 0.4794 Acc: 0.9972
+2025-06-22 14:27:38,677 - INFO - val Loss: 0.5773 Acc: 0.9575
+2025-06-22 14:27:38,677 - INFO - Epoch 48/100
+2025-06-22 14:27:53,423 - INFO - train Loss: 0.4782 Acc: 0.9978
+2025-06-22 14:27:55,349 - INFO - val Loss: 0.5677 Acc: 0.9631
+2025-06-22 14:27:55,357 - INFO - New best model with validation accuracy: 0.9631
+2025-06-22 14:27:55,357 - INFO - Epoch 49/100
+2025-06-22 14:28:10,517 - INFO - train Loss: 0.4799 Acc: 0.9972
+2025-06-22 14:28:12,334 - INFO - val Loss: 0.5710 Acc: 0.9619
+2025-06-22 14:28:12,335 - INFO - Epoch 50/100
+2025-06-22 14:28:27,420 - INFO - train Loss: 0.4797 Acc: 0.9973
+2025-06-22 14:28:29,355 - INFO - val Loss: 0.5740 Acc: 0.9581
+2025-06-22 14:28:29,428 - INFO - Model checkpoint saved at epoch 50: models/vehicle_classifier_resnet_epoch_50_20250622_142829.pth
+2025-06-22 14:28:29,429 - INFO - Epoch 51/100
+2025-06-22 14:28:44,627 - INFO - train Loss: 0.4773 Acc: 0.9985
+2025-06-22 14:28:46,556 - INFO - val Loss: 0.5743 Acc: 0.9606
+2025-06-22 14:28:46,557 - INFO - Epoch 52/100
+2025-06-22 14:29:01,518 - INFO - train Loss: 0.4782 Acc: 0.9979
+2025-06-22 14:29:03,342 - INFO - val Loss: 0.5746 Acc: 0.9569
+2025-06-22 14:29:03,342 - INFO - Epoch 53/100
+2025-06-22 14:29:17,918 - INFO - train Loss: 0.4779 Acc: 0.9973
+2025-06-22 14:29:19,652 - INFO - val Loss: 0.5814 Acc: 0.9575
+2025-06-22 14:29:19,653 - INFO - Epoch 54/100
+2025-06-22 14:29:34,502 - INFO - train Loss: 0.4800 Acc: 0.9971
+2025-06-22 14:29:36,389 - INFO - val Loss: 0.5772 Acc: 0.9587
+2025-06-22 14:29:36,389 - INFO - Epoch 55/100
+2025-06-22 14:29:51,310 - INFO - train Loss: 0.4785 Acc: 0.9980
+2025-06-22 14:29:53,206 - INFO - val Loss: 0.5766 Acc: 0.9594
+2025-06-22 14:29:53,297 - INFO - Model checkpoint saved at epoch 55: models/vehicle_classifier_resnet_epoch_55_20250622_142953.pth
+2025-06-22 14:29:53,298 - INFO - Epoch 56/100
+2025-06-22 14:30:08,504 - INFO - train Loss: 0.4773 Acc: 0.9983
+2025-06-22 14:30:10,290 - INFO - val Loss: 0.5788 Acc: 0.9581
+2025-06-22 14:30:10,290 - INFO - Epoch 57/100
+2025-06-22 14:30:25,241 - INFO - train Loss: 0.4790 Acc: 0.9979
+2025-06-22 14:30:27,110 - INFO - val Loss: 0.5841 Acc: 0.9556
+2025-06-22 14:30:27,111 - INFO - Epoch 58/100
+2025-06-22 14:30:42,225 - INFO - train Loss: 0.4784 Acc: 0.9976
+2025-06-22 14:30:44,232 - INFO - val Loss: 0.5735 Acc: 0.9600
+2025-06-22 14:30:44,233 - INFO - Epoch 59/100
+2025-06-22 14:30:59,120 - INFO - train Loss: 0.4776 Acc: 0.9982
+2025-06-22 14:31:00,952 - INFO - val Loss: 0.5745 Acc: 0.9587
+2025-06-22 14:31:00,952 - INFO - Epoch 60/100
+2025-06-22 14:31:16,115 - INFO - train Loss: 0.4769 Acc: 0.9979
+2025-06-22 14:31:17,980 - INFO - val Loss: 0.5771 Acc: 0.9613
+2025-06-22 14:31:18,081 - INFO - Model checkpoint saved at epoch 60: models/vehicle_classifier_resnet_epoch_60_20250622_143117.pth
+2025-06-22 14:31:18,081 - INFO - Epoch 61/100
+2025-06-22 14:31:33,120 - INFO - train Loss: 0.4777 Acc: 0.9985
+2025-06-22 14:31:35,010 - INFO - val Loss: 0.5754 Acc: 0.9587
+2025-06-22 14:31:35,010 - INFO - Epoch 62/100
+2025-06-22 14:31:50,011 - INFO - train Loss: 0.4755 Acc: 0.9993
+2025-06-22 14:31:51,980 - INFO - val Loss: 0.5756 Acc: 0.9600
+2025-06-22 14:31:51,980 - INFO - Epoch 63/100
+2025-06-22 14:32:06,926 - INFO - train Loss: 0.4775 Acc: 0.9976
+2025-06-22 14:32:08,839 - INFO - val Loss: 0.5772 Acc: 0.9581
+2025-06-22 14:32:08,839 - INFO - Early stopping triggered after 63 epochs
+2025-06-22 14:32:08,839 - INFO - Training complete in 17m 45s
+2025-06-22 14:32:08,839 - INFO - Best val Acc: 0.963125
+2025-06-22 14:32:11,084 - INFO - 
+VALIDATION RESULTS:
+2025-06-22 14:32:11,084 - INFO - Overall Accuracy: 0.9631
+2025-06-22 14:32:11,084 - INFO - Average Precision: 0.9638
+2025-06-22 14:32:11,084 - INFO - Average Recall: 0.9591
+2025-06-22 14:32:11,085 - INFO - Average F1-Score: 0.9612
+2025-06-22 14:32:11,090 - INFO - 
+Classification Report:
+                precision    recall  f1-score   support
+
+           Bus       1.00      1.00      1.00       160
+City-Hatchback       0.96      0.98      0.97       480
+           MPV       0.97      0.94      0.96       160
+       Pick-up       0.90      0.97      0.93       160
+           SUV       0.94      0.93      0.93       160
+         Sedan       0.96      0.93      0.95       160
+          Truk       0.99      0.97      0.98       160
+           Van       0.99      0.96      0.97       160
+
+      accuracy                           0.96      1600
+     macro avg       0.96      0.96      0.96      1600
+  weighted avg       0.96      0.96      0.96      1600
+
+2025-06-22 14:32:13,051 - INFO - 
+TEST RESULTS:
+2025-06-22 14:32:13,051 - INFO - Overall Accuracy: 0.9665
+2025-06-22 14:32:13,051 - INFO - Average Precision: 0.9674
+2025-06-22 14:32:13,051 - INFO - Average Recall: 0.9666
+2025-06-22 14:32:13,051 - INFO - Average F1-Score: 0.9667
+2025-06-22 14:32:13,056 - INFO - 
+Classification Report:
+                precision    recall  f1-score   support
+
+           Bus       1.00      1.00      1.00        30
+City-Hatchback       0.97      0.97      0.97        59
+           MPV       1.00      0.97      0.98        30
+       Pick-up       1.00      0.97      0.98        30
+           SUV       0.97      0.93      0.95        30
+         Sedan       0.90      0.93      0.92        30
+          Truk       0.97      0.97      0.97        30
+           Van       0.94      1.00      0.97        30
+
+      accuracy                           0.97       269
+     macro avg       0.97      0.97      0.97       269
+  weighted avg       0.97      0.97      0.97       269
+
+2025-06-22 14:32:14,129 - INFO - 
+        Model: RESNET
+        Dataset: Vehicle Classification
+        Classes: 8 (Bus, City-Hatchback, MPV, Pick-up, SUV, Sedan, Truk, Van)
+        
+        Final validation accuracy: 0.9631
+        Final test accuracy: 0.9665
+        
+        Total parameters: 11,574,088
+        Trainable parameters: 8,791,304
+        
+        Model saved: models/vehicle_classifier_resnet_20250622_143208.pth
+        Log file: logs/vehicle_classifier_resnet_20250622_141421.log
+        Training plots: plots
+        
+2025-06-22 14:32:14,130 - INFO - Training completed successfully

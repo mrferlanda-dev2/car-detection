@@ -49,7 +49,7 @@ class DeepSORTTracker:
         self.track_history = defaultdict(lambda: deque(maxlen=30))
         self.confirmed_tracks = set()
         
-        print("✅ DeepSORT tracker initialized")
+        print("    DeepSORT tracker initialized")
         print(f"   Max age: {max_age} frames")
         print(f"   Confirmation threshold: {n_init} detections")
         print(f"   Max cosine distance: {max_cosine_distance}")
@@ -184,13 +184,13 @@ class DeepSORTTracker:
             # Draw bounding box
             cv2.rectangle(annotated_frame, (x1, y1), (x2, y2), color, 2)
             
-            # Draw track ID
-            label = f"ID: {track_id}"
-            label_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2)[0]
-            cv2.rectangle(annotated_frame, (x1, y1 - label_size[1] - 10), 
-                         (x1 + label_size[0], y1), color, -1)
-            cv2.putText(annotated_frame, label, (x1, y1 - 5),
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+            # # Draw track ID
+            # label = f"ID: {track_id}"
+            # label_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2)[0]
+            # cv2.rectangle(annotated_frame, (x1, y1 - label_size[1] - 10), 
+            #              (x1 + label_size[0], y1), color, -1)
+            # cv2.putText(annotated_frame, label, (x1, y1 - 5),
+            #            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
             
             # Draw movement trail
             if draw_trails:
@@ -236,4 +236,4 @@ class DeepSORTTracker:
         )
         self.track_history.clear()
         self.confirmed_tracks.clear()
-        print("🔄 DeepSORT tracker reset") 
+        print("DeepSORT tracker reset") 

@@ -54,7 +54,7 @@ class VideoProcessor:
         
         # Processing parameters
         self.conf_threshold = 0.5
-        self.min_detection_size = 50  # Minimum width/height for classification
+        self.min_detection_size = 30  # Minimum width/height for classification
         self.use_deepsort = use_deepsort
         self.batch_size = batch_size
         
@@ -134,35 +134,55 @@ class VideoProcessor:
                 y1, y2 = max(0, y1), min(frame.shape[0], y2)
                 x1, x2 = max(0, x1), min(frame.shape[1], x2)
                 
-                vehicle_crop = frame[y1:y2, x1:x2]
-                
-                # Skip classification if crop is empty or too small
-                if vehicle_crop.size > 0 and vehicle_crop.shape[0] >= 10 and vehicle_crop.shape[1] >= 10:
-                    vehicle_class, class_confidence = self.classifier.classify(vehicle_crop)
-
-                    # Consecutive prediction logic for classification smoothing
-                    last_class, count = self.class_counter.get(track_id, (vehicle_class, 0))
-                    if vehicle_class == last_class:
-                        count += 1
-                    else:
-                        count = 1  # reset counter if class changes
-                    self.class_counter[track_id] = (vehicle_class, count)
-
-                    # Only update displayed class if threshold is reached
-                    if track_id not in self.displayed_class or (vehicle_class != self.displayed_class[track_id] and count >= self.consecutive_threshold):
-                        self.displayed_class[track_id] = vehicle_class
-
-                    smoothed_class = self.displayed_class[track_id]
+                # Validate crop bounds before extracting
+                if y2 > y1 and x2 > x1:
+                    vehicle_crop = frame[y1:y2, x1:x2]
                     
-                    # Add classification results
-                    result.update({
-                        'vehicle_class': smoothed_class,
-                        'class_confidence': class_confidence
-                    })
+                    # Check if crop is valid before resizing
+                    if vehicle_crop.size > 0 and vehicle_crop.shape[0] > 0 and vehicle_crop.shape[1] > 0:
+                        # Add padding to small crops
+                        if vehicle_crop.shape[0] < 50 or vehicle_crop.shape[1] < 50:
+                            vehicle_crop = cv2.resize(vehicle_crop, (64, 64))  # Minimum size for classifier
+                        
+                        # Final validation before classification
+                        if vehicle_crop.shape[0] >= 10 and vehicle_crop.shape[1] >= 10:
+                            vehicle_class, class_confidence = self.classifier.classify(vehicle_crop)
+
+                            # Consecutive prediction logic for classification smoothing
+                            last_class, count = self.class_counter.get(track_id, (vehicle_class, 0))
+                            if vehicle_class == last_class:
+                                count += 1
+                            else:
+                                count = 1  # reset counter if class changes
+                            self.class_counter[track_id] = (vehicle_class, count)
+
+                            # Only update displayed class if threshold is reached
+                            if track_id not in self.displayed_class or (vehicle_class != self.displayed_class[track_id] and count >= self.consecutive_threshold):
+                                self.displayed_class[track_id] = vehicle_class
+
+                            smoothed_class = self.displayed_class[track_id]
+                            
+                            # Add classification results
+                            result.update({
+                                'vehicle_class': smoothed_class,
+                                'class_confidence': class_confidence
+                            })
+                        else:
+                            # Add default classification for small/invalid crops
+                            result.update({
+                                'vehicle_class': 'Unknown',
+                                'class_confidence': 0.0
+                            })
+                    else:
+                        # Invalid crop - use detection class
+                        result.update({
+                            'vehicle_class': tracked_obj.get('class', 'Vehicle'),
+                            'class_confidence': 0.0
+                        })
                 else:
-                    # Add default classification for small/invalid crops
+                    # Invalid bounding box - use detection class
                     result.update({
-                        'vehicle_class': 'Unknown',
+                        'vehicle_class': tracked_obj.get('class', 'Vehicle'),
                         'class_confidence': 0.0
                     })
             else:
@@ -289,17 +309,28 @@ class VideoProcessor:
                     width = x2 - x1
                     height = y2 - y1
 
-                    if width >= self.min_detection_size and height >= self.min_detection_size:
+                    # Different thresholds based on object position or confidence
+                    min_size = 30 if tracked_obj['confidence'] > 0.8 else 50
+
+                    if width >= min_size and height >= min_size:
                         # Ensure valid crop bounds
                         y1, y2 = max(0, y1), min(frame.shape[0], y2)
                         x1, x2 = max(0, x1), min(frame.shape[1], x2)
                         
-                        vehicle_crop = frame[y1:y2, x1:x2]
-                        
-                        # Skip if crop is empty or too small
-                        if vehicle_crop.size > 0 and vehicle_crop.shape[0] >= 10 and vehicle_crop.shape[1] >= 10:
-                            valid_objects.append(tracked_obj)
-                            vehicle_crops.append(vehicle_crop)
+                        # Validate crop bounds before extracting
+                        if y2 > y1 and x2 > x1:
+                            vehicle_crop = frame[y1:y2, x1:x2]
+                            
+                            # Check if crop is valid before resizing
+                            if vehicle_crop.size > 0 and vehicle_crop.shape[0] > 0 and vehicle_crop.shape[1] > 0:
+                                # Add padding to small crops
+                                if vehicle_crop.shape[0] < 50 or vehicle_crop.shape[1] < 50:
+                                    vehicle_crop = cv2.resize(vehicle_crop, (64, 64))  # Minimum size for classifier
+                                
+                                # Final validation before adding to batch
+                                if vehicle_crop.shape[0] >= 10 and vehicle_crop.shape[1] >= 10:
+                                    valid_objects.append(tracked_obj)
+                                    vehicle_crops.append(vehicle_crop)
                 
                 # Batch classify all crops at once
                 if vehicle_crops:
@@ -385,7 +416,7 @@ class VideoProcessor:
                      save_results: bool = True, display: bool = False) -> Dict:
         """Process entire video with optimizations"""
         
-        print(f"🎥 Processing video: {input_path}")
+        print(f"Processing video: {input_path}")
         
         # Open video
         cap = cv2.VideoCapture(input_path)
@@ -415,12 +446,12 @@ class VideoProcessor:
         all_results = []
         
         # GPU warmup
-        print("🔥 Warming up GPU...")
+        print("Warming up GPU...")
         dummy_frame = np.zeros((height, width, 3), dtype=np.uint8)
         self.process_frame(dummy_frame)
         torch.cuda.synchronize() if torch.cuda.is_available() else None
         
-        print("🚀 Processing frames with optimizations...")
+        print("Processing frames with optimizations...")
         
         # Use tqdm for progress bar
         with tqdm(total=total_frames, desc="Processing", unit="frames") as pbar:
@@ -545,9 +576,9 @@ class VideoProcessor:
                     'summary': summary,
                     'frame_results': all_results
                 }, f, indent=2)
-            print(f"💾 Results saved to: {results_path}")
+            print(f"Results saved to: {results_path}")
         
-        print("✅ Video processing complete!")
+        print("    Video processing complete!")
         print(f"   Total detections: {total_detections}")
         print(f"   Vehicle counts: {vehicle_counts}")
         print(f"   Average processing time: {avg_processing_time:.3f}s/frame")
@@ -561,7 +592,7 @@ class VideoProcessor:
         Process video in real-time mode with display and controls.
         This mode prioritizes smooth playback and immediate feedback.
         """
-        print(f"🎥 Processing video in REAL-TIME mode: {input_path}")
+        print(f"Processing video in REAL-TIME mode: {input_path}")
 
         cap = cv2.VideoCapture(input_path)
         if not cap.isOpened():
@@ -586,13 +617,13 @@ class VideoProcessor:
         all_results = []
 
         # GPU warmup
-        print("🔥 Warming up GPU...")
+        print("Warming up GPU...")
         dummy_frame = np.zeros((height, width, 3), dtype=np.uint8)
         self.process_frame(dummy_frame)
         torch.cuda.synchronize() if torch.cuda.is_available() else None
 
-        print("🚀 Starting real-time processing...")
-        print("📹 Press 'q' to quit, 'p' to pause/play")
+        print("Starting real-time processing...")
+        print("Press 'q' to quit, 'p' to pause/play")
 
         paused = False
         
@@ -689,9 +720,9 @@ class VideoProcessor:
                     'summary': summary,
                     'frame_results': all_results
                 }, f, indent=2)
-            print(f"💾 Real-time results saved to: {results_path}")
+            print(f"Real-time results saved to: {results_path}")
 
-        print("✅ Real-time video processing complete!")
+        print("    Real-time video processing complete!")
         print(f"   Total detections: {total_detections}")
         print(f"   Vehicle counts: {dict(vehicle_counts)}")
         print(f"   Average processing time: {avg_processing_time_final:.3f}s/frame")

@@ -34,7 +34,7 @@ class VehicleClassifier:
             else:
                 # Fallback class names based on VeRi dataset structure
                 print("⚠️  class_names or num_classes not found in checkpoint, using VeRi fallback mapping")
-                self.class_names = ['Bus', 'City-Car', 'Double-Cabin', 'LCGC', 'MPV', 'Pick-up', 'SUV', 'Sedan', 'Truk', 'Van']
+                self.class_names = ['Bus', 'City-Hatchback', 'MPV', 'Pick-up', 'SUV', 'Sedan', 'Truk', 'Van']
                 num_classes = len(self.class_names)
                 print(f"   Using {num_classes} classes: {self.class_names}")
                 
