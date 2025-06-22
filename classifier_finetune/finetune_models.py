@@ -232,10 +232,12 @@ def train_model(model_type='efficientnetv2', data_dir='dataset', learning_rate=0
     # Create datasets
     train_dataset = VehicleDataset(os.path.join(data_dir, 'train'), transform=train_transform)
     val_dataset = VehicleDataset(os.path.join(data_dir, 'val'), transform=val_transform)
+    test_dataset = VehicleDataset(os.path.join(data_dir, 'test'), transform=val_transform)
     
     # Create data loaders
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=2)
     val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=2)
+    test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=2)
     
     # Create model
     model = create_model(model_type, num_classes=len(train_dataset.classes), dropout_rate=dropout_rate, device=device)
@@ -305,7 +307,19 @@ def train_model(model_type='efficientnetv2', data_dir='dataset', learning_rate=0
             break
     
     print(f'Training completed. Best validation accuracy: {best_val_acc:.4f}')
-    return model, best_val_acc
+    
+    # Load best model for test evaluation
+    checkpoint = torch.load(f'best_{model_type}_model.pth')
+    model.load_state_dict(checkpoint['model_state_dict'])
+    
+    # Evaluate on test set
+    print("\n" + "="*50)
+    print("TEST SET EVALUATION")
+    print("="*50)
+    test_loss, test_acc = validate_epoch(model, test_loader, criterion, device)
+    print(f'Test Loss: {test_loss:.4f}, Test Accuracy: {test_acc:.4f}')
+    
+    return model, best_val_acc, test_acc
 
 def setup_logging(log_dir, model_name):
     """Setup logging configuration"""
@@ -319,7 +333,7 @@ def setup_logging(log_dir, model_name):
         level=logging.INFO,
         format='%(asctime)s - %(levelname)s - %(message)s',
         handlers=[
-            logging.FileHandler(log_file),
+            logging.FileHandler(log_file, encoding='utf-8'),
             logging.StreamHandler()
         ]
     )
@@ -467,6 +481,7 @@ def train_model(model, dataloaders, dataset_sizes, criterion, optimizer, schedul
     
     # Load best model weights
     model.load_state_dict(best_model_wts)
+    
     return model, history, best_acc.item()
 
 def plot_training_history(history, save_path):
@@ -692,6 +707,32 @@ def main():
     val_cm_path = plot_save_dir / f'vehicle_classifier_{args.model}_val_confusion_matrix_{timestamp}.png'
     plot_confusion_matrix(val_labels, val_preds, class_names, val_cm_path, 'Validation Set')
     
+    # Evaluate on test set if available
+    test_dir = os.path.join(data_dir, 'test')
+    if os.path.exists(test_dir):
+        print("\n" + "="*50)
+        print("TEST SET EVALUATION")
+        print("="*50)
+        
+        # Create test dataset and dataloader
+        test_dataset = datasets.ImageFolder(test_dir, data_transforms['test'], loader=pil_loader)
+        test_dataloader = torch.utils.data.DataLoader(test_dataset, 
+                                                     batch_size=args.batch_size,
+                                                     shuffle=False, 
+                                                     num_workers=4,
+                                                     pin_memory=True)
+        
+        test_labels, test_preds, test_accuracy = evaluate_model(
+            model, test_dataloader, class_names, device, 'test'
+        )
+        
+        # Plot test confusion matrix
+        test_cm_path = plot_save_dir / f'vehicle_classifier_{args.model}_test_confusion_matrix_{timestamp}.png'
+        plot_confusion_matrix(test_labels, test_preds, class_names, test_cm_path, 'Test Set')
+    else:
+        print("No test directory found - skipping test evaluation")
+        test_accuracy = None
+    
     # Save model
     model_save_dir = Path('models')
     model_save_dir.mkdir(exist_ok=True)
@@ -703,6 +744,7 @@ def main():
         'class_names': class_names,
         'num_classes': num_classes,
         'val_accuracy': val_accuracy,
+        'test_accuracy': test_accuracy,
         'training_history': history,
         'model_architecture': args.model,
         'dataset': 'vehicle_classification'
@@ -719,6 +761,7 @@ def main():
     Classes: {num_classes} ({', '.join(class_names)})
     
     Final validation accuracy: {val_accuracy:.4f}
+    Final test accuracy: {f'{test_accuracy:.4f}' if test_accuracy is not None else 'N/A'}
     
     Total parameters: {total_params:,}
     Trainable parameters: {trainable_params:,}

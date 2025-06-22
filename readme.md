@@ -55,6 +55,10 @@ This project implements a robust vehicle detection and classification pipeline u
 
 ### 1. Install Requirements
 
+If you have CUDA Installed
+```bash
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
+```
 ```bash
 pip install -r requirements.txt
 ```
