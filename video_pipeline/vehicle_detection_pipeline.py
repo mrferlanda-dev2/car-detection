@@ -130,20 +130,20 @@ class YOLODetector:
                 try:
                     import ultralytics
                     self.model = ultralytics.YOLO(model_path)
-                    print(f"✅ Custom YOLO model loaded from {model_path}")
+                    print(f"Custom YOLO model loaded from {model_path}")
                     return
                 except Exception as e:
-                    print(f"⚠️  Failed to load custom YOLO: {e}")
+                    print(f"Failed to load custom YOLO: {e}")
                     print("   Falling back to PyTorch Hub model...")
             
             # Fallback to PyTorch Hub YOLOv5
             self.model = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
             self.model.to(self.device)
-            print(f"✅ YOLOv5 model loaded from PyTorch Hub")
+            print(f"YOLOv5 model loaded from PyTorch Hub")
             print(f"   Device: {self.device}")
             
         except Exception as e:
-            print(f"❌ Error loading YOLO model: {e}")
+            print(f"Error loading YOLO model: {e}")
             raise
     
     def detect(self, image: np.ndarray, conf_threshold: float = 0.5) -> List[Dict]:

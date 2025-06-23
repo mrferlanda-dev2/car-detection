@@ -33,7 +33,7 @@ class VehicleClassifier:
                 num_classes = len(self.class_names)
             else:
                 # Fallback class names based on VeRi dataset structure
-                print("⚠️  class_names or num_classes not found in checkpoint, using VeRi fallback mapping")
+                print("class_names or num_classes not found in checkpoint, using VeRi fallback mapping")
                 self.class_names = ['Bus', 'City-Hatchback', 'MPV', 'Pick-up', 'SUV', 'Sedan', 'Truk', 'Van']
                 num_classes = len(self.class_names)
                 print(f"   Using {num_classes} classes: {self.class_names}")
@@ -43,12 +43,11 @@ class VehicleClassifier:
                 num_classes = len(self.class_names)
                 print(f"   Fixed num_classes to: {num_classes}")
             
-            # Create model architecture (same as training - ResNet50)
+            # Create model architecture (same as training - ResNet18)
             self.model = torchvision.models.resnet18(weights=None)
             
             # Recreate classifier (match training architecture exactly)
-            # For ResNet50, the input features to fc is 2048
-            num_ftrs = 512  # ResNet50's fc.in_features
+            num_ftrs = 512  
             dropout_rate = 0.3
             self.model.fc = nn.Sequential(
                 nn.Dropout(p=dropout_rate),                    # index 0
@@ -82,7 +81,7 @@ class VehicleClassifier:
             print(f"   Device: {self.device}")
             
         except Exception as e:
-            print(f"❌ Error loading vehicle classifier: {e}")
+            print(f"Error loading vehicle classifier: {e}")
             raise
     
     def classify(self, image: np.ndarray) -> Tuple[str, float]:
@@ -119,7 +118,7 @@ class VehicleClassifier:
             return predicted_class, confidence_score
 
         except Exception as e:
-            print(f"❌ Error in classification: {e}")
+            print(f"Error in classification: {e}")
             return "Unknown", 0.0
     
     def classify_batch(self, images: list) -> Tuple[list, list]:
@@ -166,7 +165,7 @@ class VehicleClassifier:
             return predicted_classes, confidence_scores
             
         except Exception as e:
-            print(f"❌ Error in batch classification: {e}")
+            print(f"Error in batch classification: {e}")
             # Fallback to individual classification
             classes, confidences = [], []
             for image in images:

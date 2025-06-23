@@ -22,7 +22,7 @@ class VideoProcessor:
                  classifier_model_path: Optional[str] = None,
                  device: str = 'auto', use_deepsort: bool = True, batch_size: int = 8):
         
-        print("🚀 Initializing Vehicle Detection Pipeline...")
+        print("Initializing Vehicle Detection Pipeline...")
         
         # Set device and optimize GPU usage
         if device == 'auto':
@@ -34,7 +34,7 @@ class VideoProcessor:
         if torch.cuda.is_available():
             torch.backends.cudnn.benchmark = True  # Optimize for consistent input sizes
             torch.cuda.empty_cache()  # Clear GPU cache
-            print(f"🔥 GPU detected: {torch.cuda.get_device_name()}")
+            print(f"GPU detected: {torch.cuda.get_device_name()}")
             print(f"   VRAM: {torch.cuda.get_device_properties(0).total_memory / 1e9:.1f}GB")
         
         # Initialize detector (required)
@@ -45,9 +45,9 @@ class VideoProcessor:
         if classifier_model_path:
             try:
                 self.classifier = VehicleClassifier(classifier_model_path, str(self.device))
-                print("✅ Vehicle classifier loaded")
+                print("Vehicle classifier loaded")
             except Exception as e:
-                print(f"⚠️  Failed to load classifier: {e}")
+                print(f"Failed to load classifier: {e}")
                 print("   Continuing in detection-only mode")
         else:
             print("🔍 Running in detection-only mode")

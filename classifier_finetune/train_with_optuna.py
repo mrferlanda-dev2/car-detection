@@ -364,7 +364,7 @@ def main():
     # Run optimization
     study, final_test_acc = run_hyperparameter_tuning(args.data_dir, args.model_type, args.n_trials, args.epochs)
     
-    print(f"\n🎉 Hyperparameter optimization completed!")
+    print(f"\nHyperparameter optimization completed!")
     print(f"Best validation accuracy: {study.best_value:.4f}")
     if final_test_acc is not None:
         print(f"Final test accuracy: {final_test_acc:.4f}")
