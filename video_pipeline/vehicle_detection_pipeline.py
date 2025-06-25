@@ -16,180 +16,9 @@ from pathlib import Path
 import time
 from typing import List, Tuple, Dict, Optional
 import json
+from detector import YOLODetector
+from classifier import VehicleClassifier
 
-class VehicleClassifier:
-    """Vehicle classifier using the improved EfficientNet model"""
-    
-    def __init__(self, model_path: str, device: str = 'auto'):
-        self.device = torch.device('cuda' if torch.cuda.is_available() and device == 'auto' else device)
-        self.model = None
-        self.class_names = None
-        self.transform = None
-        self.load_model(model_path)
-        
-    def load_model(self, model_path: str):
-        """Load the trained vehicle classifier"""
-        try:
-            # Load checkpoint
-            checkpoint = torch.load(model_path, map_location=self.device, weights_only=True)
-            
-            # Get model info
-            self.class_names = checkpoint['class_names']
-            num_classes = checkpoint['num_classes']
-            
-            # Create model architecture (same as training - EfficientNet-V2-M)
-            self.model = torchvision.models.efficientnet_v2_m(weights=None)
-            
-            # Recreate classifier (match training architecture exactly)
-            num_ftrs = 1280  # EfficientNet-V2-M features
-            dropout_rate = 0.3
-            self.model.classifier = nn.Sequential(
-                nn.Dropout(p=dropout_rate),                    # index 0
-                nn.Linear(num_ftrs, 512),                      # index 1
-                nn.BatchNorm1d(512),                          # index 2
-                nn.ReLU(inplace=True),                        # index 3
-                nn.Dropout(p=dropout_rate * 0.7),             # index 4
-                nn.Linear(512, 256),                          # index 5
-                nn.BatchNorm1d(256),                          # index 6
-                nn.ReLU(inplace=True),                        # index 7
-                nn.Dropout(p=dropout_rate * 0.3),             # index 8
-                nn.Linear(256, num_classes)                   # index 9
-            )
-            
-            # Load weights
-            self.model.load_state_dict(checkpoint['model_state_dict'])
-            self.model.to(self.device)
-            self.model.eval()
-            
-            # Setup transforms
-            self.transform = transforms.Compose([
-                transforms.ToPILImage(),
-                transforms.Resize((256, 256)),
-                transforms.CenterCrop(224),
-                transforms.ToTensor(),
-                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-            ])
-            
-            print(f"   Vehicle classifier loaded successfully")
-            print(f"   Classes: {self.class_names}")
-            print(f"   Device: {self.device}")
-            
-        except Exception as e:
-            print(f"Error loading vehicle classifier: {e}")
-            raise
-    
-    def classify(self, image: np.ndarray) -> Tuple[str, float]:
-        """Classify a vehicle image"""
-        try:
-            # Preprocess image
-            if len(image.shape) == 3 and image.shape[2] == 3:
-                # Convert BGR to RGB
-                image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            else:
-                image_rgb = image
-            
-            # Transform and add batch dimension
-            input_tensor = self.transform(image_rgb).unsqueeze(0).to(self.device)
-            
-            # Predict
-            with torch.no_grad():
-                outputs = self.model(input_tensor)
-                probabilities = torch.nn.functional.softmax(outputs, dim=1)
-                confidence, predicted = torch.max(probabilities, 1)
-                
-                predicted_class = self.class_names[predicted.item()]
-                confidence_score = confidence.item()
-                
-            return predicted_class, confidence_score
-            
-        except Exception as e:
-            print(f"Error in classification: {e}")
-            return "Unknown", 0.0
-
-class YOLODetector:
-    """YOLO object detector for vehicles"""
-    
-    def __init__(self, model_path: Optional[str] = None, device: str = 'auto'):
-        self.device = torch.device('cuda' if torch.cuda.is_available() and device == 'auto' else device)
-        self.model = None
-        self.load_model(model_path)
-        
-        # Vehicle classes in COCO dataset
-        self.vehicle_classes = {
-            2: 'car',
-            3: 'motorcycle', 
-            5: 'bus',
-            7: 'truck'
-        }
-        
-    def load_model(self, model_path: Optional[str] = None):
-        """Load YOLO model"""
-        try:
-            if model_path and os.path.exists(model_path):
-                # Try to load custom YOLO model
-                try:
-                    import ultralytics
-                    self.model = ultralytics.YOLO(model_path)
-                    print(f"Custom YOLO model loaded from {model_path}")
-                    return
-                except Exception as e:
-                    print(f"Failed to load custom YOLO: {e}")
-                    print("   Falling back to PyTorch Hub model...")
-            
-            # Fallback to PyTorch Hub YOLOv5
-            self.model = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
-            self.model.to(self.device)
-            print(f"YOLOv5 model loaded from PyTorch Hub")
-            print(f"   Device: {self.device}")
-            
-        except Exception as e:
-            print(f"Error loading YOLO model: {e}")
-            raise
-    
-    def detect(self, image: np.ndarray, conf_threshold: float = 0.5) -> List[Dict]:
-        """Detect vehicles in image"""
-        try:
-            # Run detection
-            results = self.model(image)
-            
-            detections = []
-            
-            # Process results
-            if hasattr(results, 'pandas'):
-                # YOLOv5 from PyTorch Hub
-                df = results.pandas().xyxy[0]
-                for _, row in df.iterrows():
-                    class_id = int(row['class'])
-                    if class_id in self.vehicle_classes and row['confidence'] >= conf_threshold:
-                        detections.append({
-                            'bbox': [int(row['xmin']), int(row['ymin']), 
-                                   int(row['xmax']), int(row['ymax'])],
-                            'confidence': float(row['confidence']),
-                            'class': self.vehicle_classes[class_id],
-                            'class_id': class_id
-                        })
-            else:
-                # Ultralytics YOLO
-                for result in results:
-                    boxes = result.boxes
-                    if boxes is not None:
-                        for box in boxes:
-                            class_id = int(box.cls)
-                            confidence = float(box.conf)
-                            if class_id in self.vehicle_classes and confidence >= conf_threshold:
-                                x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
-                                detections.append({
-                                    'bbox': [int(x1), int(y1), int(x2), int(y2)],
-                                    'confidence': confidence,
-                                    'class': self.vehicle_classes[class_id],
-                                    'class_id': class_id
-                                })
-            
-            return detections
-            
-        except Exception as e:
-            print(f"Error in detection: {e}")
-            return []
 
 class VideoProcessor:
     """Main video processing pipeline"""
@@ -307,9 +136,9 @@ class VideoProcessor:
         height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         
-        print(f"   Resolution: {width}x{height}")
-        print(f"   FPS: {fps}")
-        print(f"   Total frames: {total_frames}")
+        print(f"Resolution: {width}x{height}")
+        print(f"FPS: {fps}")
+        print(f"Total frames: {total_frames}")
         
         # Setup video writer
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
@@ -322,7 +151,7 @@ class VideoProcessor:
         processing_times = []
         all_results = []
         
-        print("🔄 Processing frames...")
+        print("Processing frames...")
         
         while True:
             ret, frame = cap.read()

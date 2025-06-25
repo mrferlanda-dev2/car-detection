@@ -44,25 +44,25 @@ class YOLODetector:
                     try:
                         if hasattr(self.model, 'names') and len(self.model.names) == 1:
                             self.is_custom_single_class = True
-                            print(f"   Detected single-class model (1 class)")
+                            print(f"Detected single-class model (1 class)")
                         elif hasattr(self.model, 'model') and hasattr(self.model.model, 'nc') and self.model.model.nc == 1:
                             self.is_custom_single_class = True
-                            print(f"   Detected single-class model (1 class)")
+                            print(f"Detected single-class model (1 class)")
                     except Exception:
                         # Assume custom model if detection fails
                         self.is_custom_single_class = True
-                        print(f"   Assuming single-class custom model")
+                        print(f"Assuming single-class custom model")
                     
                     return
                 except Exception as e:
                     print(f"Failed to load custom YOLO: {e}")
-                    print("   Falling back to PyTorch Hub model...")
+                    print("Falling back to PyTorch Hub model...")
             
             # Fallback to PyTorch Hub YOLOv5
             self.model = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
             self.model.to(self.device)
             print(f"YOLOv5 model loaded from PyTorch Hub")
-            print(f"   Device: {self.device}")
+            print(f"Device: {self.device}")
             
         except Exception as e:
             print(f"Error loading YOLO model: {e}")

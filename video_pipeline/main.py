@@ -40,12 +40,12 @@ def main():
     classifier_model_path = None
     if args.classifier_model and os.path.exists(args.classifier_model):
         classifier_model_path = args.classifier_model
-        print(f"✅ Using classifier model: {classifier_model_path}")
+        print(f"Using classifier model: {classifier_model_path}")
     elif args.classifier_model:
-        print(f"⚠️  Classifier model not found: {args.classifier_model}")
+        print(f"Classifier model not found: {args.classifier_model}")
         print("   Running in detection-only mode")
     else:
-        print("🔍 Running in detection-only mode (no classifier specified)")
+        print("Running in detection-only mode (no classifier specified)")
     
     # Initialize pipeline
     try:
@@ -78,10 +78,10 @@ def main():
                 display=args.display
             )
         
-        print("\n🎉 Pipeline completed successfully!")
+        print("\nPipeline completed successfully!")
         
     except Exception as e:
-        print(f"❌ Pipeline failed: {e}")
+        print(f"Pipeline failed: {e}")
         raise
 
 if __name__ == "__main__":
