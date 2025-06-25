@@ -76,9 +76,9 @@ class VehicleClassifier:
                 transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
             ])
             
-            print(f"✅ Vehicle classifier loaded successfully")
-            print(f"   Classes: {self.class_names}")
-            print(f"   Device: {self.device}")
+            print(f"Vehicle classifier loaded successfully")
+            print(f"Classes: {self.class_names}")
+            print(f"Device: {self.device}")
             
         except Exception as e:
             print(f"Error loading vehicle classifier: {e}")

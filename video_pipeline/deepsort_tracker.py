@@ -49,12 +49,12 @@ class DeepSORTTracker:
         self.track_history = defaultdict(lambda: deque(maxlen=30))
         self.confirmed_tracks = set()
         
-        print("    DeepSORT tracker initialized")
-        print(f"   Max age: {max_age} frames")
-        print(f"   Confirmation threshold: {n_init} detections")
-        print(f"   Max cosine distance: {max_cosine_distance}")
-        print(f"   Feature extractor: MobileNet")
-        print(f"   GPU acceleration: {torch.cuda.is_available()}")
+        print("DeepSORT tracker initialized")
+        print(f"Max age: {max_age} frames")
+        print(f"Confirmation threshold: {n_init} detections")
+        print(f"Max cosine distance: {max_cosine_distance}")
+        print(f"Feature extractor: MobileNet")
+        print(f"GPU acceleration: {torch.cuda.is_available()}")
     
     def update(self, detections: List[Dict], frame: np.ndarray) -> List[Dict]:
         """

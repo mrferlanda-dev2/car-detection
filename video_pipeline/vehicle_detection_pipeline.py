@@ -190,7 +190,7 @@ class VideoProcessor:
             if frame_count % 30 == 0:  # Every 30 frames
                 progress = (frame_count / total_frames) * 100
                 avg_time = np.mean(processing_times[-30:])
-                print(f"   Progress: {progress:.1f}% | "
+                print(f"Progress: {progress:.1f}% | "
                       f"Frame {frame_count}/{total_frames} | "
                       f"Avg time: {avg_time:.3f}s/frame")
             
@@ -231,11 +231,11 @@ class VideoProcessor:
                 }, f, indent=2)
             print(f"Results saved to: {results_path}")
         
-        print("    Video processing complete!")
-        print(f"   Total detections: {total_detections}")
-        print(f"   Vehicle counts: {vehicle_counts}")
-        print(f"   Average processing time: {avg_processing_time:.3f}s/frame")
-        print(f"   Output saved to: {output_path}")
+        print("Video processing complete!")
+        print(f"Total detections: {total_detections}")
+        print(f"Vehicle counts: {vehicle_counts}")
+        print(f"Average processing time: {avg_processing_time:.3f}s/frame")
+        print(f"Output saved to: {output_path}")
         
         return summary
 

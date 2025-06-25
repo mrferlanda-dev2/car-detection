@@ -58,9 +58,9 @@ def create_subset_dataset(original_data_path: str, subset_ratio: float = 0.2, ou
     original_path = Path(original_data_path).parent
     subset_path = original_path / output_dir
     
-    print(f"📦 Creating {subset_ratio*100}% subset dataset...")
-    print(f"   Original: {original_path}")
-    print(f"   Subset: {subset_path}")
+    print(f"Creating {subset_ratio*100}% subset dataset...")
+    print(f"Original: {original_path}")
+    print(f"Subset: {subset_path}")
     
     # Create subset directory structure
     for split in ['train', 'val', 'test']:
@@ -126,9 +126,9 @@ names: ['Car']  # class names
     with open(subset_yaml, 'w') as f:
         f.write(yaml_content)
     
-    print(f"✅ Subset dataset created!")
-    print(f"   Total images: {total_original} -> {total_subset} ({total_subset/total_original*100:.1f}%)")
-    print(f"   Config: {subset_yaml}")
+    print(f"Subset dataset created!")
+    print(f"Total images: {total_original} -> {total_subset} ({total_subset/total_original*100:.1f}%)")
+    print(f"Config: {subset_yaml}")
     
     return str(subset_yaml)
 
@@ -319,20 +319,20 @@ def main():
     }
     
     logger.info(f"Starting optimized training...")
-    logger.info(f"   Model: YOLO11{args.model_size.upper()}")
-    logger.info(f"   Dataset: {data_path}")
-    logger.info(f"   Batch size: {batch_size}")
-    logger.info(f"   Image size: {args.imgsz}")
-    logger.info(f"   Epochs: {args.epochs}")
-    logger.info(f"   Disk caching: Enabled")
-    logger.info(f"   Workers: 16")
+    logger.info(f"Model: YOLO11{args.model_size.upper()}")
+    logger.info(f"Dataset: {data_path}")
+    logger.info(f"Batch size: {batch_size}")
+    logger.info(f"Image size: {args.imgsz}")
+    logger.info(f"Epochs: {args.epochs}")
+    logger.info(f"Disk caching: Enabled")
+    logger.info(f"Workers: 16")
     if args.subset_ratio:
         logger.info(f"   Dataset subset: {args.subset_ratio*100}%")
     
     # Monitor GPU before training
     logger.info(f"GPU Status:")
-    logger.info(f"   Memory allocated: {torch.cuda.memory_allocated() / 1e9:.2f}GB")
-    logger.info(f"   Memory cached: {torch.cuda.memory_reserved() / 1e9:.2f}GB")
+    logger.info(f"Memory allocated: {torch.cuda.memory_allocated() / 1e9:.2f}GB")
+    logger.info(f"Memory cached: {torch.cuda.memory_reserved() / 1e9:.2f}GB")
     
     # Start training
     try:
@@ -351,20 +351,20 @@ def main():
             # Quick validation
             logger.info(f"Running validation...")
             val_results = model.val(data=data_path, device=0)
-            logger.info(f"   mAP50: {val_results.box.map50:.4f}")
-            logger.info(f"   mAP50-95: {val_results.box.map:.4f}")
+            logger.info(f"mAP50: {val_results.box.map50:.4f}")
+            logger.info(f"mAP50-95: {val_results.box.map:.4f}")
             
             # Log final results
             logger.info(f"All outputs organized in: {run_dir}")
-            logger.info(f"   Plots: {plots_dir}")
-            logger.info(f"   Weights: {weights_dir}")
-            logger.info(f"   Logs: {logs_dir}")
+            logger.info(f"Plots: {plots_dir}")
+            logger.info(f"Weights: {weights_dir}")
+            logger.info(f"Logs: {logs_dir}")
         
     except RuntimeError as e:
         if "out of memory" in str(e).lower():
             logger.error(f"GPU Out of Memory!")
-            logger.error(f"   Current batch size: {batch_size}")
-            logger.error(f"   Try reducing batch size: --batch-size {batch_size // 2}")
+            logger.error(f"Current batch size: {batch_size}")
+            logger.error(f"Try reducing batch size: --batch-size {batch_size // 2}")
         else:
             logger.error(f"Training error: {e}")
     
