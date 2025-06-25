@@ -35,7 +35,7 @@ class VideoProcessor:
             torch.backends.cudnn.benchmark = True  # Optimize for consistent input sizes
             torch.cuda.empty_cache()  # Clear GPU cache
             print(f"GPU detected: {torch.cuda.get_device_name()}")
-            print(f"   VRAM: {torch.cuda.get_device_properties(0).total_memory / 1e9:.1f}GB")
+            print(f"VRAM: {torch.cuda.get_device_properties(0).total_memory / 1e9:.1f}GB")
         
         # Initialize detector (required)
         self.detector = YOLODetector(yolo_model_path, str(self.device))
@@ -48,9 +48,9 @@ class VideoProcessor:
                 print("Vehicle classifier loaded")
             except Exception as e:
                 print(f"Failed to load classifier: {e}")
-                print("   Continuing in detection-only mode")
+                print("Continuing in detection-only mode")
         else:
-            print("🔍 Running in detection-only mode")
+            print("Running in detection-only mode")
         
         # Processing parameters
         self.conf_threshold = 0.5
@@ -78,7 +78,7 @@ class VideoProcessor:
             self.class_counter = {}    # vehicle_id: (last predicted class, count)
             self.consecutive_threshold = 3  # Reduced for DeepSORT (tracks are more stable)
         
-        print("✅ Pipeline initialized successfully!")
+        print("Pipeline initialized successfully!")
     
     def process_frame(self, frame: np.ndarray) -> Tuple[np.ndarray, List[Dict]]:
         """Process a single frame"""
@@ -429,10 +429,10 @@ class VideoProcessor:
         height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         
-        print(f"   Resolution: {width}x{height}")
-        print(f"   FPS: {fps}")
-        print(f"   Total frames: {total_frames}")
-        print(f"   Batch size: {self.batch_size}")
+        print(f"Resolution: {width}x{height}")
+        print(f"FPS: {fps}")
+        print(f"Total frames: {total_frames}")
+        print(f"Batch size: {self.batch_size}")
         
         # Setup video writer with better codec
         fourcc = cv2.VideoWriter.fourcc(*'mp4v')
@@ -578,11 +578,11 @@ class VideoProcessor:
                 }, f, indent=2)
             print(f"Results saved to: {results_path}")
         
-        print("    Video processing complete!")
-        print(f"   Total detections: {total_detections}")
-        print(f"   Vehicle counts: {vehicle_counts}")
-        print(f"   Average processing time: {avg_processing_time:.3f}s/frame")
-        print(f"   Output saved to: {output_path}")
+        print("Video processing complete!")
+        print(f"Total detections: {total_detections}")
+        print(f"Vehicle counts: {vehicle_counts}")
+        print(f"Average processing time: {avg_processing_time:.3f}s/frame")
+        print(f"Output saved to: {output_path}")
         
         return summary
     
@@ -603,9 +603,9 @@ class VideoProcessor:
         height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
-        print(f"   Resolution: {width}x{height}")
-        print(f"   FPS: {fps}")
-        print(f"   Total frames: {total_frames}")
+        print(f"Resolution: {width}x{height}")
+        print(f"FPS: {fps}")
+        print(f"Total frames: {total_frames}")
 
         fourcc = cv2.VideoWriter.fourcc(*'mp4v')
         out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
@@ -722,10 +722,10 @@ class VideoProcessor:
                 }, f, indent=2)
             print(f"Real-time results saved to: {results_path}")
 
-        print("    Real-time video processing complete!")
-        print(f"   Total detections: {total_detections}")
-        print(f"   Vehicle counts: {dict(vehicle_counts)}")
-        print(f"   Average processing time: {avg_processing_time_final:.3f}s/frame")
-        print(f"   Output saved to: {output_path}")
+        print("Real-time video processing complete!")
+        print(f"Total detections: {total_detections}")
+        print(f"Vehicle counts: {dict(vehicle_counts)}")
+        print(f"Average processing time: {avg_processing_time_final:.3f}s/frame")
+        print(f"Output saved to: {output_path}")
 
         return summary 
